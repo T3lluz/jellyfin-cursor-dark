@@ -3,9 +3,9 @@
 /*
  * @name        Cursor Dark
  * @author      T3lluz
- * @version     2.1.0
+ * @version     2.2.0
  * @description Neutral dark gray in the style of Cursor's editor theme with a purple accent, and Apple-style frosted glass on everything that floats. Port of the Stremio theme of the same name.
- * @swatches    #141414 #232323 #7b5bf5 #2a2a2a #e6e6e6
+ * @swatches    #181818 #0e0e0e #232323 #7b5bf5 #e6e6e6
  *
  * Install: Dashboard -> General -> Custom CSS code (server-wide), or
  * Settings -> Display -> Custom CSS (just you), and paste
@@ -35,11 +35,11 @@
 
 :root,
 :root[data-theme] {
-	--cx-bg:          #141414;
+	--cx-bg:          #181818;   /* inner page, a small step lighter than the frame */
 	--cx-surface:     #1c1c1c;
 	--cx-surface-2:   #232323;
 	--cx-raised:      #2a2a2a;
-	--cx-chrome:      #0e0e0e;   /* the frame around the content */
+	--cx-chrome:      #0e0e0e;   /* the slim padding around the content */
 	--cx-text:        #e6e6e6;
 	--cx-text-dim:    #9a9a9a;
 	--cx-accent:      #7b5bf5;   /* Stremio purple: selection, progress, focus */
@@ -103,7 +103,7 @@
 	--jf-palette-secondary-contrastTextChannel: 255 255 255;
 
 	--jf-palette-background-default:           var(--cx-bg);
-	--jf-palette-background-defaultChannel:    20 20 20;
+	--jf-palette-background-defaultChannel:    24 24 24;
 	--jf-palette-background-defaultImage:      none;
 	--jf-palette-background-paper:             var(--cx-surface);
 	--jf-palette-background-paperChannel:      28 28 28;
@@ -183,6 +183,29 @@ body {
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 	font-feature-settings: "cv11", "ss01";
+}
+
+/* Two surfaces. The viewport and the backdrop layer are the darker chrome.
+   Each page is the lighter inner sheet. The frame shadow paints the chrome
+   back over the slim padding, so the sheet reads as a container under the
+   top bar. Detail pages are full-bleed, so the sheet color fills the view
+   and the hero can dissolve into it. */
+html,
+.backgroundContainer {
+	background-color: var(--cx-chrome) !important;
+	background-image: none !important;
+}
+
+.page:not(#videoOsdPage) {
+	background-color: var(--cx-bg) !important;
+	background-image: none !important;
+}
+
+html:has(#itemDetailPage:not(.hide)),
+body:has(#itemDetailPage:not(.hide)),
+body:has(#itemDetailPage:not(.hide)) .backgroundContainer {
+	background-color: var(--cx-bg) !important;
+	background-image: none !important;
 }
 
 h1, h2, h3,
@@ -1075,6 +1098,35 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	scrollbar-width: none;
 }
 
+/* The first poster sits against the scroller's clip and the frame. A hover
+   scale then loses its left edge. Inset the row, and the heading with it. */
+@media (min-width: 50em) {
+	.layout-desktop .emby-scroller:not(.no-padding) {
+		padding-left: calc(3.3% + 1.15rem) !important;
+	}
+
+	[dir="rtl"] .layout-desktop .emby-scroller:not(.no-padding) {
+		padding-left: max(3.3%, env(safe-area-inset-left, 0px)) !important;
+		padding-right: calc(3.3% + 1.15rem) !important;
+	}
+
+	.layout-desktop .sectionTitleContainer.padded-left,
+	.layout-desktop .verticalSection > .sectionTitleContainer {
+		padding-left: calc(3.3% + 1.15rem) !important;
+	}
+
+	[dir="rtl"] .layout-desktop .sectionTitleContainer.padded-left,
+	[dir="rtl"] .layout-desktop .verticalSection > .sectionTitleContainer {
+		padding-left: 0 !important;
+		padding-right: calc(3.3% + 1.15rem) !important;
+	}
+
+	.layout-desktop .homeLibraryButtonContainer {
+		margin-left: 0.35rem !important;
+		margin-right: 0 !important;
+	}
+}
+
 .emby-scroller.scrollX::-webkit-scrollbar,
 .itemsContainer.scrollX::-webkit-scrollbar {
 	display: none;
@@ -1248,9 +1300,18 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 
 .layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) .itemBackdrop {
 	height: var(--cx-hero) !important;
+	background-color: transparent !important;
 	background-position: center 20% !important;
 	/* fixed attachment clips the artwork on a hard rectangle */
 	background-attachment: scroll !important;
+	/* dissolve the picture itself into the page behind it, well above
+	   the hero's bottom edge, so the artwork cannot end in a hard cut */
+	-webkit-mask-image: linear-gradient(180deg, #000 0%, #000 46%, transparent 82%);
+	mask-image: linear-gradient(180deg, #000 0%, #000 46%, transparent 82%);
+	-webkit-mask-size: 100% 100%;
+	mask-size: 100% 100%;
+	-webkit-mask-repeat: no-repeat;
+	mask-repeat: no-repeat;
 }
 
 /* experimental layout: run the backdrop up under the glass header */
@@ -1259,53 +1320,32 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	height: calc(var(--cx-hero) + 48px) !important;
 }
 
-/* the fade: a short shade under the header, then a long ramp that is
-   already the page colour well above the bottom of the hero.  The ramp
-   used to finish on the hero's edge, which left a hard line where the
-   artwork met the page.  The extra pixels below the hero cover that seam. */
+/* the fade rides on the same color as the page. A second, darker shade
+   under the hero is what drew the line: the ramp has to become --cx-bg
+   and stay there. The mask above lets that page color through. */
 .layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) .itemBackdrop::before {
 	content: "";
 	position: absolute;
-	inset: 0 0 -16px 0;
+	inset: 0 0 -32px 0;
 	pointer-events: none;
 	background: linear-gradient(180deg,
-		rgba(20, 20, 20, 0.5) 0%,
-		rgba(20, 20, 20, 0.16) 7%,
-		rgba(20, 20, 20, 0) 14%,
-		rgba(20, 20, 20, 0) 18%,
-		rgba(20, 20, 20, 0.05) 26%,
-		rgba(20, 20, 20, 0.12) 34%,
-		rgba(20, 20, 20, 0.22) 42%,
-		rgba(20, 20, 20, 0.36) 50%,
-		rgba(20, 20, 20, 0.52) 58%,
-		rgba(20, 20, 20, 0.68) 64%,
-		rgba(20, 20, 20, 0.84) 70%,
-		var(--cx-bg) 76%,
+		color-mix(in srgb, var(--cx-bg) 52%, transparent) 0%,
+		color-mix(in srgb, var(--cx-bg) 16%, transparent) 8%,
+		transparent 16%,
+		transparent 40%,
+		color-mix(in srgb, var(--cx-bg) 22%, transparent) 52%,
+		color-mix(in srgb, var(--cx-bg) 55%, transparent) 66%,
+		var(--cx-bg) 80%,
 		var(--cx-bg) 100%);
 }
 
-/* the fixed, page-wide artwork (Display → Backdrops).  Mask the picture
-   itself so it dissolves into the theme colour instead of being cut off
-   by the solid page below the hero.  Fully gone before the hero ends. */
+/* the fixed, page-wide artwork (Display → Backdrops). Fade it in viewport
+   units so it is gone before the hero ends, whatever the element height. */
 .layout-desktop body:has(#itemDetailPage:not(.hide) .detailImageContainer .portraitCard) .backdropImage {
-	-webkit-mask-image: linear-gradient(180deg,
-		#000 0%,
-		#000 12%,
-		rgba(0, 0, 0, 0.78) 26%,
-		rgba(0, 0, 0, 0.5) 38%,
-		rgba(0, 0, 0, 0.24) 50%,
-		rgba(0, 0, 0, 0.08) 60%,
-		transparent 68%);
-	mask-image: linear-gradient(180deg,
-		#000 0%,
-		#000 12%,
-		rgba(0, 0, 0, 0.78) 26%,
-		rgba(0, 0, 0, 0.5) 38%,
-		rgba(0, 0, 0, 0.24) 50%,
-		rgba(0, 0, 0, 0.08) 60%,
-		transparent 68%);
-	-webkit-mask-size: 100% 100%;
-	mask-size: 100% 100%;
+	-webkit-mask-image: linear-gradient(180deg, #000 0, #000 28vh, transparent 58vh);
+	mask-image: linear-gradient(180deg, #000 0, #000 28vh, transparent 58vh);
+	-webkit-mask-size: 100% 100vh;
+	mask-size: 100% 100vh;
 	-webkit-mask-repeat: no-repeat;
 	mask-repeat: no-repeat;
 }
@@ -1319,12 +1359,18 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	opacity: 0.12 !important;
 }
 
-/* the page below the hero is solid, so the app-wide backdrop stops there.
-   A one-pixel overlap hides a seam if the hero height rounds short. */
-.layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) .detailPageWrapperContainer {
-	margin-top: -1px;
+/* everything under the artwork is the inner page color, including the
+   layers Jellyfin paints with its own background token */
+.layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) .detailPageWrapperContainer,
+.layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) .detailPagePrimaryContainer,
+.layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) .detailPagePrimaryContent {
 	background-color: var(--cx-bg) !important;
 	background-image: none !important;
+}
+
+.layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) .detailPageWrapperContainer {
+	position: relative;
+	margin-top: -1px;
 }
 
 .layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) .detailImageContainer .portraitCard {
