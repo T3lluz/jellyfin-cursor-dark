@@ -3,7 +3,7 @@
 /*
  * @name        Cursor Dark
  * @author      T3lluz
- * @version     2.4.1
+ * @version     2.5.0
  * @description Neutral dark gray in the style of Cursor's editor theme with a purple accent, and Apple-style frosted glass on everything that floats. Port of the Stremio theme of the same name.
  * @swatches    #202020 #0f0f10 #2d2d2d #7b5bf5 #e6e6e6
  *
@@ -975,17 +975,39 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	box-shadow: 0 18px 36px -16px rgba(0, 0, 0, 0.75);
 }
 
-/* the picture zooms inside the poster, clipped to its corners */
-.cardScalable {
-	overflow: hidden;
+/* Only the picture zooms inside the poster.  Jellyfin draws the picture
+   as the background of the same box that holds the watched badge, the
+   progress bar and the library name, so zooming that box zoomed them too.
+   The picture is redrawn on a ::before layer behind them, which zooms on
+   its own inside the box's clipped corners; the box's own copy is hidden. */
+.cardScalable > .cardImageContainer {
+	z-index: 0;
+	background-size: 0 0 !important;
 }
 
-.cardScalable > .cardImageContainer,
+.cardScalable > .cardImageContainer::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	border-radius: inherit;
+	pointer-events: none;
+	background-image: inherit;
+	background-position: inherit;
+	background-repeat: no-repeat;
+	background-size: cover;
+	transition: transform var(--cx-slow) var(--cx-ease);
+}
+
+.cardScalable > .coveredImage-contain::before {
+	background-size: contain;
+}
+
 .cardScalable > .blurhash-canvas {
 	transition: transform var(--cx-slow) var(--cx-ease);
 }
 
-.layout-desktop .card-hoverable:is(:hover, :focus-within) .cardScalable > .cardImageContainer,
+.layout-desktop .card-hoverable:is(:hover, :focus-within) .cardScalable > .cardImageContainer::before,
 .layout-desktop .card-hoverable:is(:hover, :focus-within) .cardScalable > .blurhash-canvas {
 	transform: scale(1.07);
 }
@@ -1897,8 +1919,12 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	justify-content: flex-end;
 }
 
-/* buttons row: rating and end time on the left, transport in the free
-   middle, everything else on the right.  In flow, so nothing stacks. */
+/* buttons row, laid out like YouTube, Netflix and Disney+: volume and the
+   end time on the left, the transport (rewind, play/pause, forward, previous
+   and next) in the middle, and the favourite, subtitles, audio, settings,
+   picture-in-picture and fullscreen on the right.  Everything stays in the
+   flow and the transport is centred by equal auto margins, so nothing can
+   overlap however many buttons are showing. */
 #videoOsdPage .videoOsdBottom .buttons {
 	position: relative;
 	display: flex;
@@ -1913,9 +1939,8 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	order: 3;
 }
 
-#videoOsdPage .videoOsdBottom .buttons > .btnUserRating {
+#videoOsdPage .videoOsdBottom .buttons > .volumeButtons {
 	order: 0;
-	flex-shrink: 0;
 }
 
 #videoOsdPage .videoOsdBottom .buttons > .osdTimeText {
@@ -1983,6 +2008,23 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	font-size: 2.4rem !important;
 }
 
+/* wide windows: the transport sits exactly in the middle of the panel.
+   The sides hold at most about 250px each and the transport about 350px,
+   so from 62.5em up there is always room and nothing can overlap. */
+@media (min-width: 62.5em) {
+	#videoOsdPage .videoOsdBottom .buttons > div[dir] {
+		position: absolute;
+		left: 50%;
+		top: calc(50% + 0.1rem);
+		margin: 0;
+		transform: translate(-50%, -50%);
+	}
+
+	#videoOsdPage .videoOsdBottom .buttons > .osdTimeText {
+		margin-right: auto !important;
+	}
+}
+
 /* narrow windows: transport on its own row, still not covering the tools */
 @media (max-width: 48em) {
 	#videoOsdPage .videoOsdBottom .buttons {
@@ -2001,7 +2043,7 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 }
 
 #videoOsdPage .osdTimeText {
-	margin: 0 0.35rem 0 0.2rem !important;
+	margin: 0 0.35rem 0 0.4rem !important;
 	font-size: 0.78rem;
 	color: rgba(255, 255, 255, 0.65);
 	white-space: nowrap;
@@ -2017,7 +2059,7 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	align-items: center;
 	flex: 0 1 auto;
 	min-width: 0;
-	margin: 0 0.15rem !important;
+	margin: 0 !important;
 }
 
 #videoOsdPage .videoOsdBottom .osdVolumeSliderContainer {
@@ -2144,6 +2186,44 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 
 #videoOsdPage .chapterThumbText:empty {
 	display: none;
+}
+
+/* volume and brightness popups: a frosted card in the middle of the screen */
+.iconOsd {
+	top: 50% !important;
+	left: 50% !important;
+	right: auto !important;
+	transform: translate(-50%, -50%);
+	min-width: 10rem;
+	padding: 1.1rem 1.4rem 1rem !important;
+	box-sizing: border-box;
+	border-radius: var(--cx-r-xl) !important;
+	background: var(--cx-mat-player) !important;
+	-webkit-backdrop-filter: blur(24px) saturate(110%) brightness(0.8);   /* small, so not the panel's 60px */
+	backdrop-filter: blur(24px) saturate(110%) brightness(0.8);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 24px 60px -20px rgba(0, 0, 0, 0.6);
+	text-align: center;
+	transition: opacity var(--cx-med) ease !important;
+}
+
+.iconOsdIcon {
+	margin: 0 auto 0.85rem !important;
+	font-size: 2.6rem !important;
+	color: #fff;
+}
+
+.iconOsdProgressOuter {
+	height: 5px !important;
+	margin: 0 !important;
+	border-radius: 99px !important;
+	background: rgba(255, 255, 255, 0.25) !important;
+	overflow: hidden;
+}
+
+.iconOsdProgressInner,
+.brightnessOsdProgressInner {
+	border-radius: 99px !important;
+	background: #fff !important;
 }
 
 /* --- top bar: frosted back button -----------------------------------------
@@ -2301,7 +2381,7 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 
 	.layout-desktop .card-hoverable:is(:hover, :focus-within) .cardScalable,
 	.layout-desktop .padded-top-focusscale .card-hoverable:is(:hover, :focus-within) .cardScalable,
-	.layout-desktop .card-hoverable:is(:hover, :focus-within) .cardScalable > .cardImageContainer,
+	.layout-desktop .card-hoverable:is(:hover, :focus-within) .cardScalable > .cardImageContainer::before,
 	.layout-desktop .card-hoverable:is(:hover, :focus-within) .cardScalable > .blurhash-canvas,
 	.layout-desktop .listItem-largeImage:hover .listItemImage-large {
 		transform: none;
