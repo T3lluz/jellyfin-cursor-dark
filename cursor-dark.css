@@ -1,0 +1,1119 @@
+/*
+ * @name        Cursor Dark
+ * @author      T3lluz
+ * @version     1.0.0
+ * @description Neutral dark gray in the style of Cursor's editor theme with a purple accent. Flat, minimal, frosted glass on everything that floats. Port of the Stremio theme of the same name.
+ * @swatches    #141414 #232323 #7b5bf5 #2a2a2a #e6e6e6
+ *
+ * Install: Dashboard -> General -> Custom CSS code (server-wide), or
+ * Settings -> Display -> Custom CSS (just you), and paste
+ *
+ *   @import url("https://t3lluz.github.io/jellyfin-cursor-dark/cursor-dark.css");
+ *
+ * Jellyfin 10.9+ paints the web client from --jf-palette-* variables, so most
+ * of the colour work is section 1.  The rest only uses Jellyfin's own class
+ * names (no build hashes), and works with both the classic and the
+ * experimental layout.
+ *
+ * Performance rules this file sticks to:
+ *   - backdrop-filter only on surfaces that float and are few at a time
+ *   - only transform/opacity/colour are animated, never layout or blur
+ *   - an element with backdrop-filter is never inside a parent that fades
+ *     its opacity (that turns the blur off mid-fade and flickers)
+ */
+
+/* ==========================================================================
+   1. Tokens
+   ========================================================================== */
+
+:root,
+:root[data-theme] {
+	--cx-bg:          #141414;
+	--cx-surface:     #1c1c1c;
+	--cx-surface-2:   #232323;
+	--cx-raised:      #2a2a2a;
+	--cx-chrome:      #0e0e0e;   /* header bar + drawer, framing the content */
+	--cx-text:        #e6e6e6;
+	--cx-text-dim:    #9a9a9a;
+	--cx-accent:      #7b5bf5;   /* Stremio purple */
+	--cx-accent-rgb:  123, 91, 245;
+	--cx-hover:       rgba(255, 255, 255, 0.06);
+	--cx-active:      rgba(255, 255, 255, 0.10);
+	--cx-line:        rgba(255, 255, 255, 0.08);
+	--cx-line-strong: rgba(255, 255, 255, 0.14);
+
+	/* glass */
+	--cx-glass:       rgba(30, 30, 30, 0.55);
+	--cx-glass-thin:  rgba(30, 30, 30, 0.35);
+	--cx-blur:        blur(24px) saturate(170%);
+	--cx-shadow:      0 12px 32px -12px rgba(0, 0, 0, 0.55);
+
+	/* player pills */
+	--cx-pill:        rgba(24, 24, 24, 0.36);
+	--cx-pill-blur:   blur(22px) saturate(160%);
+	--cx-pill-line:   rgba(255, 255, 255, 0.09);
+	--cx-pill-h:      3.25rem;
+
+	/* motion */
+	--cx-spring:      cubic-bezier(0.34, 1.45, 0.64, 1);   /* small overshoot */
+	--cx-out:         cubic-bezier(0.2, 0.9, 0.25, 1);     /* quick out, soft settle */
+	--cx-fast:        140ms;
+	--cx-med:         240ms;
+	--cx-slow:        380ms;
+
+	/* --- Jellyfin's own palette ----------------------------------------- */
+	--jf-palette-primary-main:                 var(--cx-accent);
+	--jf-palette-primary-light:                #9a82f7;
+	--jf-palette-primary-dark:                 #5a3fd6;
+	--jf-palette-primary-contrastText:         #fff;
+	--jf-palette-primary-mainChannel:          123 91 245;
+	--jf-palette-primary-lightChannel:         154 130 247;
+	--jf-palette-primary-darkChannel:          90 63 214;
+	--jf-palette-primary-contrastTextChannel:  255 255 255;
+	--jf-palette-secondary-main:               var(--cx-accent);
+	--jf-palette-secondary-light:              #9a82f7;
+	--jf-palette-secondary-dark:               #5a3fd6;
+	--jf-palette-secondary-contrastText:       #fff;
+	--jf-palette-secondary-mainChannel:        123 91 245;
+	--jf-palette-secondary-lightChannel:       154 130 247;
+	--jf-palette-secondary-darkChannel:        90 63 214;
+	--jf-palette-secondary-contrastTextChannel: 255 255 255;
+
+	--jf-palette-background-default:           var(--cx-bg);   /* flat body, no gradient */
+	--jf-palette-background-defaultChannel:    20 20 20;
+	--jf-palette-background-defaultImage:      none;
+	--jf-palette-background-paper:             var(--cx-surface);
+	--jf-palette-background-paperChannel:      28 28 28;
+
+	--jf-palette-AppBar-defaultBg:             var(--cx-chrome);
+	--jf-palette-AppBar-darkBg:                var(--cx-chrome);
+	--jf-palette-AppBar-transparentBg:         var(--cx-glass-thin);
+	--jf-palette-AppBar-gradient:              none;
+
+	--jf-palette-text-primary:                 var(--cx-text);
+	--jf-palette-text-secondary:               var(--cx-text-dim);
+	--jf-palette-text-disabled:                rgba(230, 230, 230, 0.4);
+	--jf-palette-text-icon:                    rgba(230, 230, 230, 0.5);
+	--jf-palette-text-primaryChannel:          230 230 230;
+	--jf-palette-text-secondaryChannel:        154 154 154;
+	--jf-palette-divider:                      var(--cx-line);
+	--jf-palette-dividerChannel:               255 255 255;
+
+	--jf-palette-action-hover:                 var(--cx-hover);
+	--jf-palette-action-hoverOpacity:          0.06;
+	--jf-palette-action-selected:              var(--cx-active);
+	--jf-palette-action-selectedOpacity:       0.12;
+	--jf-palette-action-focus:                 var(--cx-active);
+	--jf-palette-action-focusOpacity:          0.10;
+
+	--jf-palette-error-main:                   #e5534b;
+	--jf-palette-error-mainChannel:            229 83 75;
+	--jf-palette-warning-main:                 #e5a165;
+	--jf-palette-warning-mainChannel:          229 161 101;
+	--jf-palette-info-main:                    #6aa8ff;
+	--jf-palette-info-mainChannel:             106 168 255;
+	--jf-palette-starIcon-main:                #e5c07b;
+	--jf-palette-starIcon-mainChannel:         229 192 123;
+
+	--jf-palette-FilledInput-bg:               var(--cx-surface);
+	--jf-palette-FilledInput-hoverBg:          var(--cx-surface-2);
+	--jf-palette-Slider-primaryTrack:          rgba(var(--cx-accent-rgb), 0.35);
+	--jf-palette-Slider-secondaryTrack:        rgba(var(--cx-accent-rgb), 0.35);
+	--jf-palette-LinearProgress-primaryBg:     rgba(var(--cx-accent-rgb), 0.25);
+	--jf-palette-LinearProgress-secondaryBg:   rgba(var(--cx-accent-rgb), 0.25);
+	--jf-palette-Switch-primaryDisabledColor:  #3b2f73;
+	--jf-palette-TableCell-border:             var(--cx-line);
+	--jf-palette-Tooltip-bg:                   var(--cx-glass);
+	--jf-palette-SnackbarContent-bg:           var(--cx-glass);
+	--jf-palette-SnackbarContent-color:        var(--cx-text);
+	--jf-palette-Avatar-defaultBg:             var(--cx-raised);
+	--jf-palette-Button-inheritContainedBg:    var(--cx-raised);
+	--jf-palette-Button-inheritContainedHoverBg: #333;
+
+	--jf-card-borderRadius:                    0.75rem;
+
+	accent-color: var(--cx-accent);
+	color-scheme: dark;
+}
+
+/* ==========================================================================
+   2. Base
+   ========================================================================== */
+
+::selection {
+	background: rgba(var(--cx-accent-rgb), 0.4);
+	color: #fff;
+}
+
+::-webkit-scrollbar-thumb {
+	background-color: rgba(255, 255, 255, 0.10);
+	border: 2px solid transparent;
+	background-clip: padding-box;
+	border-radius: 99px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background-color: rgba(255, 255, 255, 0.22);
+}
+
+html {
+	scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+
+/* loading spinners (stock: four colours) */
+.mdl-spinner__layer,
+.mdl-spinner__layer-1,
+.mdl-spinner__layer-2,
+.mdl-spinner__layer-3,
+.mdl-spinner__layer-4 {
+	border-color: var(--cx-accent) !important;
+}
+
+/* ==========================================================================
+   3. Glass: everything that floats above the page
+   ========================================================================== */
+
+/* menus, popups, dialogs, toasts and tooltips: one translucent tint plus the
+   blur behind it.  Full-screen dialogs (small windows, TV) stay solid. */
+.actionSheet,
+.dialog:not(.dialog-fullscreen):not(.dialog-fullscreen-lowres):not(.dialog-fixedSize),
+.toast,
+.sliderBubble,
+.MuiPopover-paper,
+.MuiMenu-paper,
+.MuiDialog-paper,
+.MuiTooltip-tooltip,
+.MuiSnackbarContent-root {
+	background-color: var(--cx-glass) !important;
+	background-image: none !important;
+	-webkit-backdrop-filter: var(--cx-blur);
+	backdrop-filter: var(--cx-blur);
+	border: 1px solid var(--cx-line);
+	box-shadow: var(--cx-shadow) !important;
+	color: var(--cx-text);
+}
+
+/* the small popups */
+.actionSheet,
+.MuiPopover-paper,
+.MuiMenu-paper,
+.toast,
+.MuiSnackbarContent-root {
+	border-radius: 0.9rem !important;
+}
+
+/* dialogs */
+.dialog:not(.dialog-fullscreen):not(.dialog-fullscreen-lowres):not(.dialog-fixedSize),
+.MuiDialog-paper {
+	border-radius: 1.1rem !important;
+}
+
+/* large fixed-size dialogs (metadata editor, filters, ...) hold a lot of
+   text: frosted, but dense */
+.dialog.dialog-fixedSize:not(.dialog-fullscreen):not(.dialog-fullscreen-lowres) {
+	background-color: rgba(24, 24, 24, 0.88) !important;
+	-webkit-backdrop-filter: var(--cx-blur);
+	backdrop-filter: var(--cx-blur);
+	border: 1px solid var(--cx-line);
+	border-radius: 1.1rem !important;
+	box-shadow: var(--cx-shadow) !important;
+}
+
+.formDialogHeader,
+.formDialogFooter {
+	background-color: transparent !important;
+	border-color: var(--cx-line) !important;
+}
+
+.MuiTooltip-tooltip,
+.sliderBubble {
+	border-radius: 0.55rem !important;
+	padding: 0.35rem 0.6rem;
+	font-size: 0.8rem;
+}
+
+/* menu rows */
+.actionSheetMenuItem,
+.MuiMenuItem-root,
+.MuiMenu-paper .MuiListItemButton-root {
+	border-radius: 0.55rem !important;
+	margin: 0 0.3rem !important;
+	transition: background-color var(--cx-fast) ease;
+}
+
+.actionSheetMenuItem:hover,
+.actionSheetMenuItem:focus {
+	background-color: var(--cx-hover) !important;
+}
+
+.actionSheetContent {
+	padding: 0.3rem 0 !important;
+}
+
+.actionsheetDivider,
+.MuiMenu-paper .MuiDivider-root {
+	background-color: var(--cx-line) !important;
+	border-color: var(--cx-line) !important;
+}
+
+/* the dimmed page behind dialogs */
+.dialogBackdropOpened {
+	opacity: 0.5 !important;
+}
+
+/* ==========================================================================
+   4. Controls
+   ========================================================================== */
+
+/* text fields, selects */
+.emby-input,
+.emby-select,
+.emby-textarea,
+.emby-select-withcolor {
+	background-color: var(--cx-surface) !important;
+	border: 1px solid var(--cx-line) !important;
+	border-radius: 0.6rem !important;
+	color: var(--cx-text) !important;
+	transition: background-color var(--cx-fast) ease, border-color var(--cx-fast) ease;
+}
+
+.emby-input:hover,
+.emby-select:hover,
+.emby-textarea:hover {
+	background-color: var(--cx-surface-2) !important;
+}
+
+.emby-input:focus,
+.emby-select:focus,
+.emby-textarea:focus {
+	background-color: var(--cx-surface-2) !important;
+	border-color: var(--cx-line-strong) !important;
+}
+
+.selectArrow {
+	color: var(--cx-text-dim);
+}
+
+/* buttons */
+.raised:not(.button-submit):not(.cardOverlayButton),
+.emby-button.raised:not(.button-submit) {
+	background-color: var(--cx-raised) !important;
+	color: var(--cx-text) !important;
+	box-shadow: inset 0 0 0 1px var(--cx-line) !important;
+}
+
+.raised,
+.button-submit,
+.button-cancel {
+	border-radius: 0.6rem !important;
+	transition: background-color var(--cx-fast) ease, box-shadow var(--cx-fast) ease, filter var(--cx-fast) ease;
+}
+
+.raised:not(.button-submit):hover {
+	background-color: #333 !important;
+	box-shadow: inset 0 0 0 1px var(--cx-line-strong) !important;
+}
+
+.button-submit {
+	background: var(--cx-accent) !important;
+	color: #fff !important;
+}
+
+.button-submit:hover {
+	filter: brightness(1.1);
+}
+
+/* checkboxes */
+.checkboxOutline {
+	border-radius: 0.3rem !important;
+	border-color: var(--cx-line-strong) !important;
+}
+
+/* toggles */
+.mdl-switch__track {
+	background-color: var(--cx-raised) !important;
+	transition: background-color var(--cx-med) ease;
+}
+
+.mdl-switch__input:checked + .mdl-switch__label + .mdl-switch__track,
+.mdl-switch.is-checked .mdl-switch__track {
+	background-color: rgba(var(--cx-accent-rgb), 0.5) !important;
+}
+
+.mdl-switch__input:checked + .mdl-switch__label + .mdl-switch__track + .mdl-switch__thumb,
+.mdl-switch.is-checked .mdl-switch__thumb {
+	background-color: var(--cx-accent) !important;
+}
+
+/* sliders (stock thumbs are hard-coded blue) */
+.mdl-slider-background-lower {
+	background-color: var(--cx-accent) !important;
+}
+
+.mdl-slider-background-upper {
+	background-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+.mdl-slider::-webkit-slider-thumb {
+	background: #fff !important;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.mdl-slider::-moz-range-thumb {
+	background: #fff !important;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* list rows (settings, episodes, tracks) */
+.listItem {
+	border-radius: 0.6rem;
+	transition: background-color var(--cx-fast) ease;
+}
+
+.listItem:hover {
+	background-color: var(--cx-hover);
+}
+
+.listItem-border {
+	border-color: var(--cx-line) !important;
+}
+
+.paperList {
+	background-color: var(--cx-surface) !important;
+	box-shadow: inset 0 0 0 1px var(--cx-line);
+	border-radius: 0.75rem !important;
+}
+
+/* ==========================================================================
+   5. Navigation
+   ========================================================================== */
+
+/* --- header (classic layout) ------------------------------------------- */
+
+.skinHeader-withBackground:not(.semiTransparent):not(.osdHeader) {
+	background-color: var(--cx-chrome) !important;
+	background-image: none !important;
+}
+
+/* over a details backdrop: glass */
+.skinHeader.semiTransparent {
+	background-color: var(--cx-glass-thin) !important;
+	-webkit-backdrop-filter: var(--cx-blur) !important;
+	backdrop-filter: var(--cx-blur) !important;
+}
+
+.skinHeader:not(.osdHeader) .headerButton:not(.headerUserButton),
+.MuiAppBar-root .MuiIconButton-root {
+	border-radius: 0.8rem !important;
+	color: rgba(230, 230, 230, 0.6) !important;
+	transition: background-color var(--cx-fast) ease, color var(--cx-fast) ease;
+}
+
+.skinHeader:not(.osdHeader) .headerButton:not(.headerUserButton):hover,
+.MuiAppBar-root .MuiIconButton-root:hover {
+	background-color: var(--cx-hover) !important;
+	color: var(--cx-text) !important;
+}
+
+/* avatar with an accent ring */
+.headerUserButtonRound,
+.MuiAppBar-root .MuiAvatar-root {
+	box-shadow: 0 0 0 2px var(--cx-chrome), 0 0 0 3.5px rgba(var(--cx-accent-rgb), 0.85);
+}
+
+.headerUserButton .headerUserButtonRound {
+	box-shadow: none;
+}
+
+.headerUserButton:hover {
+	background-color: transparent !important;
+}
+
+.pageTitle {
+	color: var(--cx-text);
+	font-weight: 600;
+}
+
+/* tabs: dim-to-bright, the selected one tinted with the accent */
+.emby-tab-button {
+	border-radius: 0.8rem !important;
+	color: rgba(230, 230, 230, 0.55) !important;
+	font-weight: 500;
+	transition: background-color var(--cx-fast) ease, color var(--cx-fast) ease;
+}
+
+.emby-tab-button:hover {
+	background-color: var(--cx-hover) !important;
+	color: rgba(230, 230, 230, 0.9) !important;
+}
+
+.emby-tab-button-active,
+.emby-tab-button-active:hover {
+	background-color: rgba(var(--cx-accent-rgb), 0.12) !important;
+	color: var(--cx-accent) !important;
+}
+
+.emby-tabs-slider {
+	padding: 0.25rem 0;
+}
+
+.emby-tab-button-ripple-effect,
+.emby-tabs-slider .emby-tab-button::after {
+	display: none !important;
+}
+
+/* --- header (experimental layout) -------------------------------------- */
+
+.MuiAppBar-root {
+	background-color: var(--cx-chrome) !important;
+	background-image: none !important;
+	box-shadow: none !important;
+}
+
+/* on details pages and while playing it floats over artwork */
+body:has(.itemDetailPage:not(.hide)) .MuiAppBar-root,
+body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
+	background-color: var(--cx-glass-thin) !important;
+	-webkit-backdrop-filter: var(--cx-blur);
+	backdrop-filter: var(--cx-blur);
+}
+
+.MuiAppBar-root .MuiButton-root {
+	border-radius: 0.8rem !important;
+	color: rgba(230, 230, 230, 0.6) !important;
+	font-weight: 500;
+	text-transform: none;
+	transition: background-color var(--cx-fast) ease, color var(--cx-fast) ease;
+}
+
+.MuiAppBar-root .MuiButton-root:hover {
+	background-color: var(--cx-hover) !important;
+	color: rgba(230, 230, 230, 0.95) !important;
+}
+
+/* the app name / logo at the left stays bright */
+.MuiAppBar-root .MuiToolbar-root > .MuiStack-root > .MuiButton-root:first-child {
+	color: var(--cx-text) !important;
+	font-weight: 600;
+}
+
+/* the current library */
+.MuiAppBar-root .MuiButton-root:is([aria-current], .Mui-selected, .MuiButton-colorPrimary, .MuiButton-textPrimary) {
+	background-color: rgba(var(--cx-accent-rgb), 0.12) !important;
+	color: var(--cx-accent) !important;
+}
+
+.MuiAppBar-root .MuiTabs-indicator {
+	background-color: var(--cx-accent) !important;
+	border-radius: 99px;
+}
+
+.MuiAppBar-root .MuiTab-root {
+	text-transform: none;
+	color: rgba(230, 230, 230, 0.55);
+}
+
+.MuiAppBar-root .MuiTab-root.Mui-selected {
+	color: var(--cx-accent) !important;
+}
+
+/* --- side drawer --------------------------------------------------------- */
+
+.mainDrawer,
+.MuiDrawer-paper {
+	background-color: var(--cx-chrome) !important;
+	background-image: none !important;
+	border-right: 1px solid var(--cx-line) !important;
+}
+
+.navMenuOption,
+.MuiDrawer-paper .MuiListItemButton-root {
+	border-radius: 0.6rem !important;
+	margin: 0.1rem 0.5rem !important;
+	color: rgba(230, 230, 230, 0.7);
+	transition: background-color var(--cx-fast) ease, color var(--cx-fast) ease;
+}
+
+.navMenuOption:hover,
+.MuiDrawer-paper .MuiListItemButton-root:hover {
+	background-color: var(--cx-hover) !important;
+	color: var(--cx-text);
+}
+
+.navMenuOption.navMenuOption-selected,
+.MuiDrawer-paper .MuiListItemButton-root.Mui-selected {
+	background: rgba(var(--cx-accent-rgb), 0.12) !important;
+	color: var(--cx-accent) !important;
+}
+
+.navMenuOption-selected .navMenuOptionIcon,
+.MuiDrawer-paper .Mui-selected .MuiListItemIcon-root {
+	color: var(--cx-accent) !important;
+}
+
+.sidebarHeader,
+.MuiDrawer-paper .MuiListSubheader-root {
+	color: var(--cx-text-dim) !important;
+	background: transparent !important;
+	font-size: 0.75rem;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+.sidebarDivider {
+	background-color: var(--cx-line) !important;
+}
+
+/* --- search ------------------------------------------------------------ */
+
+.searchFields .emby-input,
+.MuiAppBar-root .MuiInputBase-root {
+	background-color: var(--cx-surface) !important;
+	border-radius: 99px !important;
+}
+
+/* ==========================================================================
+   6. Cards and rows
+   ========================================================================== */
+
+.cardBox,
+.cardScalable {
+	transition: none;
+}
+
+/* a white ring on the hovered/focused poster */
+.card:is(:hover, :focus, :focus-within) .cardBox:not(.visualCardBox) .cardScalable,
+.card:is(:hover, :focus, :focus-within) .visualCardBox {
+	box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85) !important;
+	border-radius: var(--jf-card-borderRadius);
+}
+
+/* TV focus border (stock: accent) */
+.card:focus .cardBox.visualCardBox,
+.card:focus .cardBox:not(.visualCardBox) .cardScalable {
+	border-color: transparent !important;
+}
+
+.cardScalable,
+.cardContent,
+.cardImageContainer,
+.cardOverlayContainer,
+.blurhash-canvas {
+	border-radius: var(--jf-card-borderRadius) !important;
+}
+
+.visualCardBox {
+	background-color: var(--cx-surface) !important;
+	box-shadow: inset 0 0 0 1px var(--cx-line);
+}
+
+.defaultCardBackground {
+	background-color: var(--cx-surface-2) !important;
+}
+
+/* nothing on a card zooms; the overlay is a light tint */
+.cardOverlayContainer {
+	background: rgba(0, 0, 0, 0.18) !important;
+	transition: opacity var(--cx-fast) ease !important;
+}
+
+/* things layered over artwork get translucent tints (no blur on cards:
+   it costs a layer per card) */
+.cardOverlayButton {
+	background-color: rgba(16, 16, 16, 0.55) !important;
+	border-radius: 50% !important;
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+	color: #fff !important;
+	transition: background-color var(--cx-fast) ease;
+}
+
+.cardOverlayButton:hover {
+	background-color: rgba(16, 16, 16, 0.8) !important;
+}
+
+/* the play bubble in the middle */
+.cardOverlayFab-primary {
+	background-color: rgba(var(--cx-accent-rgb), 0.9) !important;
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35) !important;
+}
+
+.cardOverlayFab-primary:hover {
+	background-color: var(--cx-accent) !important;
+}
+
+/* watched / unplayed-count badges */
+.playedIndicator,
+.countIndicator,
+.mediaSourceIndicator,
+.fullSyncIndicator {
+	background: rgba(18, 18, 18, 0.72) !important;
+	color: #fff !important;
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
+/* progress bars */
+.itemProgressBar {
+	background-color: rgba(255, 255, 255, 0.2) !important;
+	height: 0.25em !important;
+	border-radius: 99px;
+	overflow: hidden;
+}
+
+.itemProgressBarForeground {
+	background-color: var(--cx-accent) !important;
+	border-radius: 99px;
+}
+
+.cardText-secondary,
+.cardText-secondary * {
+	color: var(--cx-text-dim) !important;
+}
+
+/* row headers */
+.sectionTitle,
+.sectionTitle-cards {
+	font-weight: 600 !important;
+	letter-spacing: -0.01em;
+}
+
+.sectionTitleTextButton:hover,
+.sectionTitleTextButton:hover .sectionTitle {
+	color: var(--cx-accent) !important;
+}
+
+/* row arrows */
+.emby-scrollbuttons-button {
+	border-radius: 0.6rem !important;
+	color: rgba(230, 230, 230, 0.6) !important;
+}
+
+.emby-scrollbuttons-button:hover:not(:disabled) {
+	background-color: var(--cx-hover) !important;
+	color: var(--cx-text) !important;
+}
+
+/* generic icon buttons: subtle white hover instead of accent */
+.paper-icon-button-light:hover:not(:disabled) {
+	background-color: var(--cx-hover);
+	color: var(--cx-text);
+}
+
+/* ==========================================================================
+   7. Details page and settings
+   ========================================================================== */
+
+/* the ribbon under the backdrop: frosted */
+.detailRibbon {
+	background: rgba(20, 20, 20, 0.6) !important;
+	-webkit-backdrop-filter: blur(20px);
+	backdrop-filter: blur(20px);
+	border-top: 1px solid var(--cx-line);
+	border-bottom: 1px solid var(--cx-line);
+}
+
+/* round action buttons */
+.detailButton {
+	border-radius: 50% !important;
+	background-color: var(--cx-glass-thin) !important;
+	box-shadow: inset 0 0 0 1px var(--cx-line);
+	transition: background-color var(--cx-fast) ease;
+}
+
+.detailButton:hover {
+	background-color: var(--cx-active) !important;
+	color: var(--cx-text) !important;
+}
+
+.detailButton.btnPlay {
+	background-color: rgba(var(--cx-accent-rgb), 0.9) !important;
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+	color: #fff !important;
+}
+
+.detailButton.btnPlay:hover {
+	background-color: var(--cx-accent) !important;
+}
+
+.detailImageContainer .card .cardScalable,
+.detailImageContainer .cardImageContainer {
+	border-radius: 0.9rem !important;
+	box-shadow: var(--cx-shadow), 0 0 0 1px var(--cx-line) !important;
+}
+
+.itemName,
+.parentName {
+	font-weight: 600 !important;
+	letter-spacing: -0.01em;
+}
+
+.itemMiscInfo,
+.mediaInfoItem {
+	color: var(--cx-text-dim);
+}
+
+.mediaInfoOfficialRating,
+.mediaInfoText {
+	border-color: var(--cx-line-strong) !important;
+	border-radius: 0.35rem !important;
+}
+
+/* genre / tag / link chips */
+.itemGenres a,
+.itemTags a,
+.itemExternalLinks a,
+.detailsGroupItem .content a {
+	color: var(--cx-text) !important;
+	transition: color var(--cx-fast) ease;
+}
+
+.itemGenres a:hover,
+.itemTags a:hover,
+.itemExternalLinks a:hover,
+.detailsGroupItem .content a:hover {
+	color: var(--cx-accent) !important;
+}
+
+.overview-expand {
+	color: var(--cx-accent) !important;
+}
+
+/* track selects (Video / Audio / Subtitles) */
+.detailTrackSelect,
+.trackSelections .selectContainer .emby-select {
+	background-color: transparent !important;
+	border-color: transparent !important;
+}
+
+.trackSelections .selectContainer .emby-select:hover {
+	background-color: var(--cx-hover) !important;
+}
+
+/* settings / preferences menu */
+.readOnlyContent .listItem .listItemIcon,
+.userPreferencesPage .listItemIcon {
+	color: var(--cx-text-dim);
+}
+
+/* ==========================================================================
+   8. Player: segmented smoked-glass controls
+   --------------------------------------------------------------------------
+   Seek bar, transport (rewind / play / forward) and the right-hand buttons
+   are separate pills.  Jellyfin hides the controls by fading the whole bar;
+   here the bar stays opaque and each pill fades itself, so the blur never
+   switches off mid-fade.  The bar still moves by half a pixel so Jellyfin
+   gets the transitionend it waits for before removing it.
+   ========================================================================== */
+
+/* legibility gradients: lighter than stock */
+#videoOsdPage .videoOsdBottom {
+	background: linear-gradient(0deg, rgba(0, 0, 0, 0.4), transparent) !important;
+	padding-top: 4rem;
+	opacity: 1 !important;
+	transform: translateY(0);
+	transition: transform var(--cx-med) ease, background-color var(--cx-med) ease !important;
+}
+
+#videoOsdPage .videoOsdBottom.videoOsdBottom-hidden {
+	transform: translateY(0.5px);
+	background: transparent !important;
+}
+
+.skinHeader-withBackground.osdHeader {
+	background: linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, transparent) !important;
+	transition: opacity var(--cx-slow) ease;
+}
+
+/* --- hide / show -------------------------------------------------------- */
+
+#videoOsdPage .osdControls > *,
+#videoOsdPage .videoOsdBottom .buttons > * {
+	transition: opacity var(--cx-med) ease, background-color var(--cx-fast) ease !important;
+}
+
+#videoOsdPage .videoOsdBottom-hidden .osdControls > *,
+#videoOsdPage .videoOsdBottom-hidden .buttons > * {
+	opacity: 0;
+	pointer-events: none;
+}
+
+/* the controls row itself never fades (its pills do) */
+#videoOsdPage .videoOsdBottom-hidden .osdControls > .buttons {
+	opacity: 1;
+}
+
+/* --- layout --------------------------------------------------------------- */
+
+#videoOsdPage .osdControls {
+	padding: 0 1.25rem 0.9rem !important;
+}
+
+#videoOsdPage .osdMainTextContainer .osdTitle {
+	font-weight: 600;
+	text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* seek bar pill */
+#videoOsdPage .osdControls > .flex:has(> .sliderContainer),
+#videoOsdPage .osdControls > .flex.flex-direction-row {
+	height: 2.6rem;
+	margin: 0 0 0.6rem;
+	padding: 0 0.9rem;
+	gap: 0.6rem;
+	border-radius: 99px;
+	background-color: var(--cx-pill);
+	-webkit-backdrop-filter: var(--cx-pill-blur);
+	backdrop-filter: var(--cx-pill-blur);
+	box-shadow: inset 0 0 0 1px var(--cx-pill-line);
+}
+
+#videoOsdPage .osdPositionText,
+#videoOsdPage .osdDurationText {
+	margin: 0 !important;
+	padding: 0 !important;
+	font-size: 0.95rem;
+	font-weight: 500;
+	opacity: 0.8;
+	font-variant-numeric: tabular-nums;
+}
+
+/* buttons row */
+#videoOsdPage .videoOsdBottom .buttons {
+	padding: 0 !important;
+	gap: 0;
+	align-items: center;
+}
+
+#videoOsdPage .videoOsdBottom .buttons .paper-icon-button-light {
+	width: calc(var(--cx-pill-h) - 0.5rem);
+	height: calc(var(--cx-pill-h) - 0.5rem);
+	margin: 0.25rem !important;
+	padding: 0 !important;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 50% !important;
+	color: #fff !important;
+	background-color: transparent;
+}
+
+#videoOsdPage .videoOsdBottom .buttons .paper-icon-button-light.hide {
+	display: none !important;
+}
+
+#videoOsdPage .videoOsdBottom .buttons .paper-icon-button-light .material-icons {
+	font-size: 1.6rem !important;
+}
+
+#videoOsdPage .videoOsdBottom .buttons .paper-icon-button-light:hover:not(:disabled) {
+	background-color: rgba(255, 255, 255, 0.10) !important;
+	color: #fff !important;
+}
+
+/* favourite heart keeps its red when set */
+#videoOsdPage .videoOsdBottom .btnUserRating .material-icons.ratingbutton-icon-withrating,
+#videoOsdPage .videoOsdBottom .btnUserRating[data-isfavorite="true"] .material-icons {
+	color: #e5534b;
+}
+
+/* left pill: rewind / play / forward */
+#videoOsdPage .videoOsdBottom .buttons > div[dir] {
+	display: flex;
+	align-items: center;
+	height: var(--cx-pill-h);
+	border-radius: 99px;
+	background-color: var(--cx-pill);
+	-webkit-backdrop-filter: var(--cx-pill-blur);
+	backdrop-filter: var(--cx-pill-blur);
+	box-shadow: inset 0 0 0 1px var(--cx-pill-line);
+}
+
+#videoOsdPage .osdTimeText {
+	margin-left: 1rem !important;
+	font-size: 0.9rem;
+	opacity: 0.8;
+	text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* right pill: everything after the time text, drawn as touching segments
+   (rounded only at the two ends) so it reads as one shape */
+#videoOsdPage .videoOsdBottom .buttons > .osdTimeText ~ :not(.hide) {
+	height: var(--cx-pill-h);
+	margin: 0 !important;
+	padding: 0 0.1rem !important;
+	border-radius: 0 !important;
+	background-color: var(--cx-pill) !important;
+	-webkit-backdrop-filter: var(--cx-pill-blur);
+	backdrop-filter: var(--cx-pill-blur);
+	box-shadow: inset 0 1px 0 var(--cx-pill-line), inset 0 -1px 0 var(--cx-pill-line);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: auto;
+}
+
+#videoOsdPage .videoOsdBottom .buttons > .osdTimeText ~ :not(.hide) > * {
+	flex: none;
+}
+
+#videoOsdPage .videoOsdBottom .buttons > .osdTimeText ~ :not(.hide):not(.osdTimeText ~ :not(.hide) ~ *) {
+	border-radius: 99px 0 0 99px !important;
+	padding-left: 0.15rem !important;
+	box-shadow: inset 1px 0 0 var(--cx-pill-line), inset 0 1px 0 var(--cx-pill-line), inset 0 -1px 0 var(--cx-pill-line);
+}
+
+#videoOsdPage .videoOsdBottom .buttons > :not(.hide):last-child,
+#videoOsdPage .videoOsdBottom .buttons > .btnFullscreen {
+	border-radius: 0 99px 99px 0 !important;
+	padding-right: 0.15rem !important;
+	box-shadow: inset -1px 0 0 var(--cx-pill-line), inset 0 1px 0 var(--cx-pill-line), inset 0 -1px 0 var(--cx-pill-line) !important;
+}
+
+/* segments that are buttons get their hover bubble from an inner circle */
+#videoOsdPage .videoOsdBottom .buttons > .osdTimeText ~ .paper-icon-button-light:not(.hide) {
+	width: calc(var(--cx-pill-h) - 0.3rem);
+	background-clip: border-box;
+}
+
+#videoOsdPage .videoOsdBottom .buttons > .osdTimeText ~ .paper-icon-button-light:not(.hide):hover:not(:disabled) {
+	background-color: var(--cx-pill) !important;
+	background-image: radial-gradient(circle closest-side, rgba(255, 255, 255, 0.10) calc(100% - 0.25rem), transparent calc(100% - 0.2rem)) !important;
+}
+
+/* volume inside the right pill */
+#videoOsdPage .videoOsdBottom .volumeButtons .paper-icon-button-light {
+	width: calc(var(--cx-pill-h) - 0.5rem) !important;
+}
+
+#videoOsdPage .videoOsdBottom .osdVolumeSliderContainer {
+	width: 7rem !important;
+	margin: 0 0.9rem 0 0.25rem !important;
+}
+
+/* --- seek + volume sliders ---------------------------------------------- */
+
+#videoOsdPage .mdl-slider-background-upper {
+	background-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+#videoOsdPage .osdVolumeSliderContainer .mdl-slider-background-lower {
+	background-color: #f2f2f2 !important;
+}
+
+#videoOsdPage .osdPositionSlider ~ .mdl-slider-background-flex-container .mdl-slider-background-lower,
+#videoOsdPage .sliderContainer:not(.osdVolumeSliderContainer) .mdl-slider-background-lower {
+	background-color: var(--cx-accent) !important;
+}
+
+#videoOsdPage .mdl-slider-background-flex {
+	border-radius: 99px;
+	overflow: hidden;
+}
+
+#videoOsdPage .sliderMarker {
+	background-color: rgba(255, 255, 255, 0.55) !important;
+}
+
+/* chapter preview above the seek bar */
+#videoOsdPage .chapterThumbContainer {
+	border-radius: 0.8rem !important;
+	overflow: hidden;
+	box-shadow: var(--cx-shadow), 0 0 0 1px var(--cx-pill-line);
+}
+
+#videoOsdPage .chapterThumbTextContainer {
+	background: var(--cx-glass) !important;
+	-webkit-backdrop-filter: var(--cx-blur);
+	backdrop-filter: var(--cx-blur);
+}
+
+/* --- top bar: glass back button ----------------------------------------- */
+
+.osdHeader .headerButton {
+	width: var(--cx-pill-h) !important;
+	height: var(--cx-pill-h) !important;
+	border-radius: 50% !important;
+	color: #fff !important;
+	background-color: var(--cx-pill) !important;
+	-webkit-backdrop-filter: var(--cx-pill-blur);
+	backdrop-filter: var(--cx-pill-blur);
+	box-shadow: inset 0 0 0 1px var(--cx-pill-line);
+	transition: background-color var(--cx-fast) ease;
+}
+
+.osdHeader .headerButton:hover {
+	background-color: rgba(40, 40, 40, 0.6) !important;
+}
+
+.osdHeader .headerTop {
+	padding: 0.75rem 1rem 0 !important;
+	gap: 0.4rem;
+}
+
+.osdHeader .headerRight,
+.osdHeader .headerLeft {
+	gap: 0.4rem;
+}
+
+/* --- popups --------------------------------------------------------------- */
+
+/* "up next" */
+.upNextDialog {
+	background-color: var(--cx-glass) !important;
+	-webkit-backdrop-filter: var(--cx-blur);
+	backdrop-filter: var(--cx-blur);
+	border: 1px solid var(--cx-pill-line);
+	border-radius: 1.1rem !important;
+	box-shadow: var(--cx-shadow);
+	overflow: hidden;
+}
+
+.upNextDialog-countdownText {
+	color: var(--cx-accent) !important;
+}
+
+/* skip intro / outro */
+.skip-button,
+.skipIntro .emby-button {
+	background-color: var(--cx-pill) !important;
+	-webkit-backdrop-filter: var(--cx-pill-blur);
+	backdrop-filter: var(--cx-pill-blur);
+	box-shadow: inset 0 0 0 1px var(--cx-pill-line) !important;
+	border: 0 !important;
+	border-radius: 99px !important;
+	color: #fff !important;
+}
+
+/* small text pills (playback info, osd messages) */
+.playerStats {
+	background-color: var(--cx-glass) !important;
+	-webkit-backdrop-filter: var(--cx-blur);
+	backdrop-filter: var(--cx-blur);
+	border: 1px solid var(--cx-pill-line);
+	border-radius: 1.1rem !important;
+}
+
+/* --- now-playing bar (music) -------------------------------------------- */
+
+.nowPlayingBar {
+	background-color: var(--cx-glass) !important;
+	-webkit-backdrop-filter: var(--cx-blur);
+	backdrop-filter: var(--cx-blur);
+	border-top: 1px solid var(--cx-line);
+}
+
+.nowPlayingBarPositionContainer .mdl-slider-background-lower {
+	background-color: var(--cx-accent) !important;
+}
+
+/* ==========================================================================
+   9. Accessibility: honour "reduce motion"
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+	*, *::before, *::after {
+		animation-duration: 1ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 1ms !important;
+	}
+}
