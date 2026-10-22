@@ -16,20 +16,22 @@ In Jellyfin, paste this one line into a Custom CSS box:
 - **Just your account:** Settings → Display → **Custom CSS**
 
 Save, then reload the page. Clients load the theme from the link, so a change
-pushed to this repo reaches every device on its next reload. You don't need
-to paste anything again.
+pushed to this repo reaches every device by itself: GitHub Pages publishes it
+within a minute, and browsers may keep their copy for up to 10 minutes before
+they check for a new one. You don't need to paste anything again.
 
-Browsers may keep the old file for a while, and a hard refresh doesn't reach
-it (Jellyfin adds the custom CSS after the page has loaded). To fetch a new
-version straight away, put a version tag on the link and change it whenever
-an update doesn't show:
+A hard refresh doesn't skip those 10 minutes, because Jellyfin adds the custom
+CSS after the page has loaded. To fetch an update right away, add a tag to the
+link and change it when you want a fresh copy. The tag doesn't pin a version:
+the link always serves the latest theme.
 
 ```css
-@import url("https://t3lluz.github.io/jellyfin-cursor-dark/cursor-dark.css?v=2.3.0");
+@import url("https://t3lluz.github.io/jellyfin-cursor-dark/cursor-dark.css?v=2");
 ```
 
-If GitHub Pages is ever down, this mirror serves the same file (jsDelivr
-caches it for up to 12 hours):
+If GitHub Pages is ever down, this mirror serves the same file. It updates
+much more slowly (its CDN keeps a copy for up to 12 hours, and browsers may
+keep theirs for a week), so use it only as a fallback:
 
 ```css
 @import url("https://cdn.jsdelivr.net/gh/T3lluz/jellyfin-cursor-dark@main/cursor-dark.css");
