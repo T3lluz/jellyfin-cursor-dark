@@ -19,6 +19,15 @@ Save, then reload the page. Clients load the theme from the link, so a change
 pushed to this repo reaches every device on its next reload. You don't need
 to paste anything again.
 
+Browsers may keep the old file for a while, and a hard refresh doesn't reach
+it (Jellyfin adds the custom CSS after the page has loaded). To fetch a new
+version straight away, put a version tag on the link and change it whenever
+an update doesn't show:
+
+```css
+@import url("https://t3lluz.github.io/jellyfin-cursor-dark/cursor-dark.css?v=2.3.0");
+```
+
 If GitHub Pages is ever down, this mirror serves the same file (jsDelivr
 caches it for up to 12 hours):
 
@@ -55,9 +64,9 @@ Put overrides under the `@import` line in the same box:
   16:9 cards. Both ideas come from
   [ElegantFin](https://github.com/lscambo13/ElegantFin); the CSS here is
   written from scratch.
-- The content sits on a lighter inner sheet. A slim frame of frosted glass
-  runs all the way round it and joins the header, so rows that scroll under
-  the edges blur instead of being cut off.
+- The content sits on a lighter inner sheet. The header and a slim frame
+  round the sheet are one pane of frosted glass, so rows that scroll under
+  any edge blur instead of being cut off.
 - Apple-style frosted glass throughout: header, frame, menus, dialogs,
   drawer and buttons. Panels are rounded rectangles, buttons rounded
   squares. Purple is kept for progress bars, toggles and focus.
