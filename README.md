@@ -53,6 +53,16 @@ Put overrides under the `@import` line in the same box:
 }
 ```
 
+## Home screen
+
+Rows on the home screen pop out like Netflix's when you hover them. To see
+your movies and shows right on the home screen, open Settings → Home and set
+the home sections, for example: Continue watching, Next up, Latest media,
+My media (small). "Latest media" adds a recently added row for each library.
+
+A large featured banner across the top of the home screen needs a plugin
+such as Media Bar; a CSS theme can only restyle what Jellyfin shows.
+
 ## Notes
 
 - Works with Jellyfin 10.9 and newer (tested on 12.2), in both the classic
