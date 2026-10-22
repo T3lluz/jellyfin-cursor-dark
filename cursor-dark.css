@@ -517,6 +517,34 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 	color: var(--cx-accent) !important;
 }
 
+.MuiAppBar-root .MuiAvatar-root {
+	width: 32px;
+	height: 32px;
+}
+
+/* --- frame ----------------------------------------------------------------
+   The header bar and a thin strip down the sides and bottom are one dark
+   chrome that wraps the content, which sits on a slightly lighter canvas
+   with rounded corners and a hairline edge.  Drawn as a fixed overlay with
+   a huge spread shadow, so the page can scroll underneath.  Left out on
+   details pages, in the player, on login and in the dashboard; browsers
+   without :has() simply skip it. */
+
+@media (min-width: 641px) {
+	body:has(.MuiAppBar-root):not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .MuiDrawer-docked))::after {
+		content: "";
+		position: fixed;
+		top: 48px;
+		left: 1.25rem;
+		right: 1.25rem;
+		bottom: 1.25rem;
+		border-radius: 1rem;
+		box-shadow: 0 0 0 100vmax var(--cx-chrome), inset 0 0 0 1px var(--cx-line-strong);
+		pointer-events: none;
+		z-index: 900;
+	}
+}
+
 /* --- side drawer --------------------------------------------------------- */
 
 .mainDrawer,
@@ -703,13 +731,13 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
    7. Details page and settings
    ========================================================================== */
 
-/* the ribbon under the backdrop: frosted */
+/* the ribbon under the backdrop: frosted (hairlines are inset shadows, as
+   real borders push the ribbon off the floated poster) */
 .detailRibbon {
 	background: rgba(20, 20, 20, 0.6) !important;
 	-webkit-backdrop-filter: blur(20px);
 	backdrop-filter: blur(20px);
-	border-top: 1px solid var(--cx-line);
-	border-bottom: 1px solid var(--cx-line);
+	box-shadow: inset 0 1px 0 var(--cx-line), inset 0 -1px 0 var(--cx-line);
 }
 
 /* round action buttons */
@@ -717,7 +745,27 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 	border-radius: 50% !important;
 	background-color: var(--cx-glass-thin) !important;
 	box-shadow: inset 0 0 0 1px var(--cx-line);
-	transition: background-color var(--cx-fast) ease;
+	transition: background-color var(--cx-fast) ease, filter var(--cx-fast) ease;
+}
+
+.detailButton:not(.hide) {
+	width: 2.6rem;
+	height: 2.6rem;
+	margin: 0 0.18rem !important;
+	padding: 0 !important;
+	display: inline-flex !important;
+	align-items: center;
+	justify-content: center;
+}
+
+.detailButton-content {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.detailButton-icon {
+	font-size: 1.3rem !important;
 }
 
 .detailButton:hover {
@@ -787,6 +835,270 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 
 .trackSelections .selectContainer .emby-select:hover {
 	background-color: var(--cx-hover) !important;
+}
+
+/* --- hero layout for movies, series and seasons (after ElegantFin) -------
+   A tall backdrop that fades into the page, the poster dropped in favour of
+   it, and the clear logo (or the title), info and buttons centred at its
+   foot.  Episodes, people, albums and the rest keep the stock layout. */
+
+.layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) {
+	--cx-hero: 72vh;
+}
+
+.layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) .itemBackdrop {
+	height: var(--cx-hero) !important;
+	-webkit-mask-image: linear-gradient(180deg, #000 40%, rgba(0, 0, 0, 0.55) 72%, transparent 100%);
+	mask-image: linear-gradient(180deg, #000 40%, rgba(0, 0, 0, 0.55) 72%, transparent 100%);
+}
+
+.layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) .detailImageContainer .portraitCard {
+	display: none;
+}
+
+.layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) > .detailRibbon {
+	height: 13rem !important;
+	margin-top: -13rem !important;
+	padding: 0 3.3% 0.25rem !important;
+	flex-direction: column;
+	justify-content: flex-end;
+	align-items: center;
+	text-align: center;
+	background: transparent !important;
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
+	box-shadow: none;
+}
+
+.layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) .infoWrapper {
+	flex: none;
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) .nameContainer {
+	align-items: center;
+	max-width: 100%;
+}
+
+.layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) .itemName {
+	font-size: clamp(2rem, 3.4vw, 3.4rem) !important;
+	font-weight: 700 !important;
+	letter-spacing: -0.025em;
+	line-height: 1.1;
+	white-space: normal !important;
+	text-shadow: 0 2px 24px rgba(0, 0, 0, 0.55);
+}
+
+.layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) .itemMiscInfo {
+	justify-content: center;
+	gap: 0 0.9rem;
+	margin-top: 0.35rem;
+	color: rgba(230, 230, 230, 0.8);
+	text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
+}
+
+.layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) .itemMiscInfo .mediaInfoItem {
+	margin: 0 !important;
+}
+
+.layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) .mainDetailButtons {
+	justify-content: center;
+	margin: 1.1rem 0 0 !important;
+}
+
+/* with the poster gone the content lines up with the page edge */
+.layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) > .detailPagePrimaryContent {
+	padding-left: 3.3% !important;
+	padding-right: 3.3% !important;
+}
+
+/* Play is a wide accent pill with its label ("Play", "Resume", ...) */
+.layout-desktop .mainDetailButtons > .btnPlay.detailButton:not(.hide) {
+	width: auto;
+	min-width: 8.5rem;
+	height: 2.9rem;
+	margin-right: 0.5rem !important;
+	padding: 0 1.4rem 0 1.05rem !important;
+	gap: 0.35rem;
+	border-radius: 99px !important;
+	font-weight: 600;
+}
+
+.layout-desktop .mainDetailButtons > .btnPlay.detailButton:not(.hide)::after {
+	content: attr(title);
+	font-size: 0.95rem;
+	letter-spacing: 0.01em;
+}
+
+.layout-desktop .mainDetailButtons > .btnPlay .detailButton-icon {
+	font-size: 1.6rem !important;
+}
+
+.layout-desktop .mainDetailButtons > .detailButton:not(.btnPlay):not(.hide) {
+	width: 2.9rem;
+	height: 2.9rem;
+	-webkit-backdrop-filter: blur(12px);
+	backdrop-filter: blur(12px);
+}
+
+/* the clear logo stands in for the title, centred above the info */
+@media (min-width: 68.75em) {
+	.layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) .detailLogo {
+		left: 0 !important;
+		right: 0 !important;
+		margin: 0 auto;
+		width: min(44vw, 36rem);
+		height: 19vh;
+		top: calc(var(--cx-hero) - 8.4rem - 19vh);
+		background-position: center bottom;
+		filter: drop-shadow(0 4px 24px rgba(0, 0, 0, 0.45));
+		z-index: 3;
+	}
+
+	.layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) .detailLogo:not(.hide) ~ .detailPageWrapperContainer .nameContainer .itemName {
+		display: none;
+	}
+}
+
+/* overview, tagline and the info table below the hero */
+.layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) .detailSection {
+	max-width: 62rem;
+	margin: 0 auto;
+}
+
+.tagline {
+	font-weight: 600;
+	letter-spacing: -0.01em;
+}
+
+.overview,
+.detailSectionContent .overview-controls {
+	line-height: 1.6;
+	color: rgba(230, 230, 230, 0.85);
+}
+
+.trackSelections {
+	padding: 0.35rem 0.6rem !important;
+	border-radius: 0.9rem;
+	background-color: var(--cx-surface);
+	box-shadow: inset 0 0 0 1px var(--cx-line);
+}
+
+.detailsGroupItem .label {
+	color: var(--cx-text-dim);
+}
+
+/* cast & crew: round portraits */
+.personCard .cardScalable,
+.personCard .cardImageContainer,
+.personCard .cardContent,
+.personCard .blurhash-canvas {
+	border-radius: 50% !important;
+}
+
+.card.personCard:is(:hover, :focus, :focus-within) .cardBox:not(.visualCardBox) .cardScalable {
+	border-radius: 50% !important;
+}
+
+/* --- episodes as a grid of 16:9 cards (after ElegantFin) ----------------- */
+
+@media (min-width: 50em) {
+	.layout-desktop .vertical-list:has(> .listItem-largeImage) {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(19rem, 100%), 1fr));
+		gap: 1.6rem 1.25rem;
+	}
+
+	.layout-desktop .listItem-largeImage {
+		display: flex !important;
+		flex-direction: column;
+		margin: 0 !important;
+		padding: 0 !important;
+		border: 0 !important;
+		background: transparent !important;
+		border-radius: 0;
+	}
+
+	.layout-desktop .listItem-largeImage > .listItem-content {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: start;
+		gap: 0 0.25rem;
+	}
+
+	.layout-desktop .listItem-largeImage .listItemImage-large {
+		grid-column: 1 / -1;
+		width: 100% !important;
+		height: auto !important;
+		aspect-ratio: 16 / 9;
+		margin: 0 !important;
+		border-radius: var(--jf-card-borderRadius);
+		background-size: cover;
+		transition: box-shadow var(--cx-fast) ease;
+	}
+
+	.layout-desktop .listItem-largeImage:hover .listItemImage-large {
+		box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85);
+	}
+
+	.layout-desktop .listItem-largeImage .listItemBody {
+		padding: 0.7rem 0.1rem 0 !important;
+		min-width: 0;
+	}
+
+	.layout-desktop .listItem-largeImage .listItemBodyText:first-child {
+		font-weight: 600;
+		letter-spacing: -0.01em;
+	}
+
+	.layout-desktop .listItem-largeImage .listItem-overview {
+		display: -webkit-box !important;
+		-webkit-line-clamp: 3;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+		margin-top: 0.3rem;
+		color: var(--cx-text-dim);
+		line-height: 1.5;
+	}
+
+	.layout-desktop .listItem-largeImage .listItem-overview p {
+		margin: 0;
+	}
+
+	.layout-desktop .listItem-largeImage > .listItem-bottomoverview {
+		display: none !important;
+	}
+
+	.layout-desktop .listItem-largeImage .listViewUserDataButtons {
+		padding-top: 0.45rem;
+		flex-direction: column;
+		font-size: 0.85em;
+		opacity: 0.55;
+		transition: opacity var(--cx-fast) ease;
+	}
+
+	.layout-desktop .listItem-largeImage:hover .listViewUserDataButtons {
+		opacity: 1;
+	}
+}
+
+/* the play bubble on episode images */
+.listItemImageButton {
+	background-color: rgba(var(--cx-accent-rgb), 0.9) !important;
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+	color: #fff !important;
+	border-radius: 50% !important;
+}
+
+.listItemImageButton:hover {
+	background-color: var(--cx-accent) !important;
+}
+
+.listItemImage {
+	border-radius: 0.6rem;
 }
 
 /* settings / preferences menu */
