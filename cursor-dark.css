@@ -498,9 +498,34 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 }
 
 /* the current library */
-.MuiAppBar-root .MuiButton-root:is([aria-current], .Mui-selected, .MuiButton-colorPrimary, .MuiButton-textPrimary) {
+.MuiAppBar-root a.MuiButton-root:is([aria-current], .Mui-selected, .MuiButton-textPrimary) {
 	background-color: rgba(var(--cx-accent-rgb), 0.12) !important;
 	color: var(--cx-accent) !important;
+}
+
+/* library toolbar (Play All / Shuffle): neutral glass, not accent */
+.MuiAppBar-root .MuiButton-contained,
+.MuiAppBar-root .MuiButtonGroup-root .MuiButton-root {
+	background-color: rgba(255, 255, 255, 0.08) !important;
+	color: var(--cx-text) !important;
+	box-shadow: inset 0 0 0 1px var(--cx-line) !important;
+	-webkit-backdrop-filter: var(--cx-blur);
+	backdrop-filter: var(--cx-blur);
+}
+
+.MuiAppBar-root .MuiButton-contained:hover,
+.MuiAppBar-root .MuiButtonGroup-root .MuiButton-root:hover {
+	background-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+.MuiAppBar-root .MuiButtonGroup-root .MuiButton-root:not(:last-child) {
+	border-right: 1px solid var(--cx-line) !important;
+}
+
+.MuiAppBar-root .MuiButtonGroup-root {
+	border-radius: 0.8rem;
+	box-shadow: none;
+	overflow: hidden;
 }
 
 .MuiAppBar-root .MuiTabs-indicator {
@@ -648,8 +673,16 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 
 /* things layered over artwork get translucent tints (no blur on cards:
    it costs a layer per card) */
+/* hovering the play bubble softly frosts the whole poster behind it */
+.cardOverlayContainer:has(.cardOverlayFab-primary:hover) {
+	-webkit-backdrop-filter: blur(6px);
+	backdrop-filter: blur(6px);
+}
+
 .cardOverlayButton {
-	background-color: rgba(16, 16, 16, 0.55) !important;
+	background-color: rgba(16, 16, 16, 0.4) !important;
+	-webkit-backdrop-filter: blur(10px) saturate(160%);
+	backdrop-filter: blur(10px) saturate(160%);
 	border-radius: 50% !important;
 	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
 	color: #fff !important;
@@ -660,14 +693,18 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 	background-color: rgba(16, 16, 16, 0.8) !important;
 }
 
-/* the play bubble in the middle */
+/* the play bubble in the middle: frosted glass (only one card is hovered
+   at a time, so the blur costs one layer) */
 .cardOverlayFab-primary {
-	background-color: rgba(var(--cx-accent-rgb), 0.9) !important;
-	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35) !important;
+	background-color: rgba(20, 20, 20, 0.35) !important;
+	-webkit-backdrop-filter: blur(14px) saturate(170%);
+	backdrop-filter: blur(14px) saturate(170%);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28), 0 6px 18px -6px rgba(0, 0, 0, 0.5) !important;
+	color: #fff !important;
 }
 
 .cardOverlayFab-primary:hover {
-	background-color: var(--cx-accent) !important;
+	background-color: rgba(255, 255, 255, 0.18) !important;
 }
 
 /* watched / unplayed-count badges */
@@ -774,14 +811,17 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 	color: var(--cx-text) !important;
 }
 
+/* Play: brighter frosted glass instead of a solid colour */
 .detailButton.btnPlay {
-	background-color: rgba(var(--cx-accent-rgb), 0.9) !important;
-	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+	background-color: rgba(255, 255, 255, 0.14) !important;
+	-webkit-backdrop-filter: blur(16px) saturate(170%);
+	backdrop-filter: blur(16px) saturate(170%);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24), 0 8px 24px -10px rgba(0, 0, 0, 0.6);
 	color: #fff !important;
 }
 
 .detailButton.btnPlay:hover {
-	background-color: var(--cx-accent) !important;
+	background-color: rgba(255, 255, 255, 0.22) !important;
 }
 
 .detailImageContainer .card .cardScalable,
@@ -997,7 +1037,15 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 /* overview, tagline and the info table below the hero */
 .layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) .detailSection {
 	max-width: 62rem;
-	margin: 0 auto;
+}
+
+.nameContainer .itemName {
+	color: var(--cx-text) !important;
+}
+
+.nameContainer .parentName,
+.nameContainer .parentName a {
+	color: var(--cx-text-dim) !important;
 }
 
 .tagline {
@@ -1106,14 +1154,16 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 
 /* the play bubble on episode images */
 .listItemImageButton {
-	background-color: rgba(var(--cx-accent-rgb), 0.9) !important;
-	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+	background-color: rgba(20, 20, 20, 0.35) !important;
+	-webkit-backdrop-filter: blur(14px) saturate(170%);
+	backdrop-filter: blur(14px) saturate(170%);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
 	color: #fff !important;
 	border-radius: 50% !important;
 }
 
 .listItemImageButton:hover {
-	background-color: var(--cx-accent) !important;
+	background-color: rgba(255, 255, 255, 0.18) !important;
 }
 
 /* with a mouse it only shows on hover */
