@@ -54,7 +54,10 @@ Put overrides under the `@import` line in the same box:
   centred at its foot. Episodes show as a grid of 16:9 cards. Both ideas
   come from [ElegantFin](https://github.com/lscambo13/ElegantFin); the CSS
   here is written from scratch.
-- Play buttons, menus, dialogs and the player controls are frosted glass.
-  Purple is kept for selected tabs and progress bars.
-- The player controls are three glass pills: the seek bar, the transport
-  buttons and the right-hand buttons.
+- Apple-style frosted glass throughout: header, menus, dialogs, drawer and
+  buttons. Panels are rounded rectangles, buttons rounded squares. Purple is
+  kept for progress bars, toggles and focus.
+- The player is one glass panel (title, seek bar, buttons) with the
+  transport centred. In Firefox-based browsers (Zen included) it uses a
+  denser tint, since Firefox may not blur video behind it.
+- Works in both the classic layout (Desktop Legacy) and the newer one.

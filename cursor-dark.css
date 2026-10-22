@@ -1,8 +1,10 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
 /*
  * @name        Cursor Dark
  * @author      T3lluz
- * @version     1.1.0
- * @description Neutral dark gray in the style of Cursor's editor theme with a purple accent. Flat, minimal, frosted glass on everything that floats. Port of the Stremio theme of the same name.
+ * @version     2.0.0
+ * @description Neutral dark gray in the style of Cursor's editor theme with a purple accent, and Apple-style frosted glass on everything that floats. Port of the Stremio theme of the same name.
  * @swatches    #141414 #232323 #7b5bf5 #2a2a2a #e6e6e6
  *
  * Install: Dashboard -> General -> Custom CSS code (server-wide), or
@@ -12,14 +14,19 @@
  *
  * Jellyfin 10.9+ paints the web client from --jf-palette-* variables, so most
  * of the colour work is section 1.  The rest only uses Jellyfin's own class
- * names (no build hashes), and works with both the classic and the
- * experimental layout.
+ * names (no build hashes), and covers both the classic layout and the newer
+ * experimental one.
+ *
+ * Shapes: glass panels are rounded rectangles, buttons are rounded squares
+ * (or rounded rectangles with a label).  Nothing is a pill or a circle except
+ * small status badges.
  *
  * Performance rules this file sticks to:
  *   - backdrop-filter only on surfaces that float and are few at a time
  *   - only transform/opacity/colour are animated, never layout or blur
  *   - an element with backdrop-filter is never inside a parent that fades
- *     its opacity (that turns the blur off mid-fade and flickers)
+ *     its opacity: browsers stop blurring through a translucent parent, so
+ *     the blur would only appear once the fade ends
  */
 
 /* ==========================================================================
@@ -32,34 +39,50 @@
 	--cx-surface:     #1c1c1c;
 	--cx-surface-2:   #232323;
 	--cx-raised:      #2a2a2a;
-	--cx-chrome:      #0e0e0e;   /* header bar + drawer, framing the content */
+	--cx-chrome:      #0e0e0e;   /* the frame around the content */
 	--cx-text:        #e6e6e6;
 	--cx-text-dim:    #9a9a9a;
-	--cx-accent:      #7b5bf5;   /* Stremio purple */
+	--cx-accent:      #7b5bf5;   /* Stremio purple: selection, progress, focus */
 	--cx-accent-rgb:  123, 91, 245;
-	--cx-hover:       rgba(255, 255, 255, 0.06);
-	--cx-active:      rgba(255, 255, 255, 0.10);
+	--cx-hover:       rgba(255, 255, 255, 0.07);
+	--cx-active:      rgba(255, 255, 255, 0.12);
 	--cx-line:        rgba(255, 255, 255, 0.08);
 	--cx-line-strong: rgba(255, 255, 255, 0.14);
 
-	/* glass */
-	--cx-glass:       rgba(30, 30, 30, 0.55);
-	--cx-glass-thin:  rgba(30, 30, 30, 0.35);
-	--cx-blur:        blur(24px) saturate(170%);
-	--cx-shadow:      0 12px 32px -12px rgba(0, 0, 0, 0.55);
+	--cx-font: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Noto Sans", system-ui, sans-serif;
 
-	/* player pills */
-	--cx-pill:        rgba(24, 24, 24, 0.36);
-	--cx-pill-blur:   blur(22px) saturate(160%);
-	--cx-pill-line:   rgba(255, 255, 255, 0.09);
-	--cx-pill-h:      3.25rem;
+	/* Apple-style materials: a translucent tint, a strong blur with extra
+	   saturation, a hairline edge with a faint top highlight */
+	--cx-mat-thin:    rgba(30, 30, 32, 0.42);
+	--cx-mat:         rgba(30, 30, 32, 0.6);
+	--cx-mat-thick:   rgba(28, 28, 30, 0.78);
+	--cx-mat-header:  rgba(16, 16, 17, 0.62);
+	--cx-blur:        blur(30px) saturate(180%);
+	--cx-blur-sm:     blur(14px) saturate(170%);
+	--cx-edge:        inset 0 0 0 1px rgba(255, 255, 255, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+	--cx-shadow:      0 24px 60px -24px rgba(0, 0, 0, 0.7), 0 2px 10px rgba(0, 0, 0, 0.25);
+
+	/* glass over artwork and video: a little brighter */
+	--cx-glass-btn:   rgba(255, 255, 255, 0.12);
+	--cx-glass-btn-h: rgba(255, 255, 255, 0.2);
+	--cx-glass-dark:  rgba(18, 18, 20, 0.38);
+
+	/* corner radii */
+	--cx-r-xs:  6px;
+	--cx-r-sm:  8px;
+	--cx-r-md:  10px;
+	--cx-r-lg:  14px;
+	--cx-r-xl:  20px;
+
+	/* frame */
+	--cx-frame-gap:    1.25rem;
+	--cx-frame-radius: 16px;
 
 	/* motion */
-	--cx-spring:      cubic-bezier(0.34, 1.45, 0.64, 1);   /* small overshoot */
-	--cx-out:         cubic-bezier(0.2, 0.9, 0.25, 1);     /* quick out, soft settle */
-	--cx-fast:        140ms;
-	--cx-med:         240ms;
-	--cx-slow:        380ms;
+	--cx-ease:  cubic-bezier(0.2, 0.9, 0.25, 1);   /* quick out, soft settle */
+	--cx-fast:  140ms;
+	--cx-med:   240ms;
+	--cx-slow:  380ms;
 
 	/* --- Jellyfin's own palette ----------------------------------------- */
 	--jf-palette-primary-main:                 var(--cx-accent);
@@ -79,32 +102,32 @@
 	--jf-palette-secondary-darkChannel:        90 63 214;
 	--jf-palette-secondary-contrastTextChannel: 255 255 255;
 
-	--jf-palette-background-default:           var(--cx-bg);   /* flat body, no gradient */
+	--jf-palette-background-default:           var(--cx-bg);
 	--jf-palette-background-defaultChannel:    20 20 20;
 	--jf-palette-background-defaultImage:      none;
 	--jf-palette-background-paper:             var(--cx-surface);
 	--jf-palette-background-paperChannel:      28 28 28;
 
-	--jf-palette-AppBar-defaultBg:             var(--cx-chrome);
-	--jf-palette-AppBar-darkBg:                var(--cx-chrome);
-	--jf-palette-AppBar-transparentBg:         var(--cx-glass-thin);
+	--jf-palette-AppBar-defaultBg:             var(--cx-mat-header);
+	--jf-palette-AppBar-darkBg:                var(--cx-mat-header);
+	--jf-palette-AppBar-transparentBg:         var(--cx-mat-thin);
 	--jf-palette-AppBar-gradient:              none;
 
 	--jf-palette-text-primary:                 var(--cx-text);
 	--jf-palette-text-secondary:               var(--cx-text-dim);
 	--jf-palette-text-disabled:                rgba(230, 230, 230, 0.4);
-	--jf-palette-text-icon:                    rgba(230, 230, 230, 0.5);
+	--jf-palette-text-icon:                    rgba(230, 230, 230, 0.55);
 	--jf-palette-text-primaryChannel:          230 230 230;
 	--jf-palette-text-secondaryChannel:        154 154 154;
 	--jf-palette-divider:                      var(--cx-line);
 	--jf-palette-dividerChannel:               255 255 255;
 
 	--jf-palette-action-hover:                 var(--cx-hover);
-	--jf-palette-action-hoverOpacity:          0.06;
+	--jf-palette-action-hoverOpacity:          0.07;
 	--jf-palette-action-selected:              var(--cx-active);
 	--jf-palette-action-selectedOpacity:       0.12;
 	--jf-palette-action-focus:                 var(--cx-active);
-	--jf-palette-action-focusOpacity:          0.10;
+	--jf-palette-action-focusOpacity:          0.12;
 
 	--jf-palette-error-main:                   #e5534b;
 	--jf-palette-error-mainChannel:            229 83 75;
@@ -115,22 +138,22 @@
 	--jf-palette-starIcon-main:                #e5c07b;
 	--jf-palette-starIcon-mainChannel:         229 192 123;
 
-	--jf-palette-FilledInput-bg:               var(--cx-surface);
-	--jf-palette-FilledInput-hoverBg:          var(--cx-surface-2);
-	--jf-palette-Slider-primaryTrack:          rgba(var(--cx-accent-rgb), 0.35);
-	--jf-palette-Slider-secondaryTrack:        rgba(var(--cx-accent-rgb), 0.35);
+	--jf-palette-FilledInput-bg:               rgba(255, 255, 255, 0.06);
+	--jf-palette-FilledInput-hoverBg:          rgba(255, 255, 255, 0.09);
+	--jf-palette-Slider-primaryTrack:          rgba(255, 255, 255, 0.22);
+	--jf-palette-Slider-secondaryTrack:        rgba(255, 255, 255, 0.22);
 	--jf-palette-LinearProgress-primaryBg:     rgba(var(--cx-accent-rgb), 0.25);
 	--jf-palette-LinearProgress-secondaryBg:   rgba(var(--cx-accent-rgb), 0.25);
 	--jf-palette-Switch-primaryDisabledColor:  #3b2f73;
 	--jf-palette-TableCell-border:             var(--cx-line);
-	--jf-palette-Tooltip-bg:                   var(--cx-glass);
-	--jf-palette-SnackbarContent-bg:           var(--cx-glass);
+	--jf-palette-Tooltip-bg:                   var(--cx-mat-thick);
+	--jf-palette-SnackbarContent-bg:           var(--cx-mat-thick);
 	--jf-palette-SnackbarContent-color:        var(--cx-text);
 	--jf-palette-Avatar-defaultBg:             var(--cx-raised);
 	--jf-palette-Button-inheritContainedBg:    var(--cx-raised);
 	--jf-palette-Button-inheritContainedHoverBg: #333;
 
-	--jf-card-borderRadius:                    0.75rem;
+	--jf-card-borderRadius:                    12px;
 
 	accent-color: var(--cx-accent);
 	color-scheme: dark;
@@ -140,24 +163,61 @@
    2. Base
    ========================================================================== */
 
+html,
+body,
+button,
+input,
+select,
+textarea,
+.MuiTypography-root,
+.MuiButtonBase-root,
+.MuiInputBase-root,
+.MuiTab-root,
+.MuiListItemText-primary,
+.MuiListItemText-secondary,
+.MuiListSubheader-root {
+	font-family: var(--cx-font) !important;
+}
+
+body {
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	font-feature-settings: "cv11", "ss01";
+}
+
+h1, h2, h3,
+.sectionTitle,
+.pageTitle {
+	letter-spacing: -0.015em;
+}
+
 ::selection {
 	background: rgba(var(--cx-accent-rgb), 0.4);
 	color: #fff;
 }
 
+html {
+	scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+	scrollbar-width: thin;
+}
+
+* {
+	scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent !important;
+}
+
 ::-webkit-scrollbar-thumb {
-	background-color: rgba(255, 255, 255, 0.10);
-	border: 2px solid transparent;
-	background-clip: padding-box;
-	border-radius: 99px;
+	background-color: rgba(255, 255, 255, 0.14) !important;
+	border: 3px solid transparent !important;
+	background-clip: padding-box !important;
+	border-radius: 99px !important;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-	background-color: rgba(255, 255, 255, 0.22);
-}
-
-html {
-	scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+	background-color: rgba(255, 255, 255, 0.26) !important;
 }
 
 /* loading spinners (stock: four colours) */
@@ -166,17 +226,15 @@ html {
 .mdl-spinner__layer-2,
 .mdl-spinner__layer-3,
 .mdl-spinner__layer-4 {
-	border-color: var(--cx-accent) !important;
+	border-color: rgba(255, 255, 255, 0.85) !important;
 }
 
 /* ==========================================================================
-   3. Glass: everything that floats above the page
+   3. Glass: menus, dialogs, toasts, tooltips
    ========================================================================== */
 
-/* menus, popups, dialogs, toasts and tooltips: one translucent tint plus the
-   blur behind it.  Full-screen dialogs (small windows, TV) stay solid. */
 .actionSheet,
-.dialog:not(.dialog-fullscreen):not(.dialog-fullscreen-lowres):not(.dialog-fixedSize),
+.dialog:not(.dialog-fullscreen):not(.dialog-fullscreen-lowres),
 .toast,
 .sliderBubble,
 .MuiPopover-paper,
@@ -184,193 +242,270 @@ html {
 .MuiDialog-paper,
 .MuiTooltip-tooltip,
 .MuiSnackbarContent-root {
-	background-color: var(--cx-glass) !important;
+	background-color: var(--cx-mat) !important;
 	background-image: none !important;
 	-webkit-backdrop-filter: var(--cx-blur);
 	backdrop-filter: var(--cx-blur);
-	border: 1px solid var(--cx-line);
-	box-shadow: var(--cx-shadow) !important;
+	border: 0 !important;
+	box-shadow: var(--cx-edge), var(--cx-shadow) !important;
 	color: var(--cx-text);
 }
 
-/* the small popups */
+/* context menus */
 .actionSheet,
 .MuiPopover-paper,
-.MuiMenu-paper,
-.toast,
-.MuiSnackbarContent-root {
-	border-radius: 0.9rem !important;
+.MuiMenu-paper {
+	border-radius: var(--cx-r-lg) !important;
+	min-width: 13rem;
 }
 
-/* dialogs */
-.dialog:not(.dialog-fullscreen):not(.dialog-fullscreen-lowres):not(.dialog-fixedSize),
-.MuiDialog-paper {
-	border-radius: 1.1rem !important;
+.actionSheetContent,
+.MuiMenu-list {
+	padding: 0.35rem !important;
 }
 
-/* large fixed-size dialogs (metadata editor, filters, ...) hold a lot of
-   text: frosted, but dense */
-.dialog.dialog-fixedSize:not(.dialog-fullscreen):not(.dialog-fullscreen-lowres) {
-	background-color: rgba(24, 24, 24, 0.88) !important;
-	-webkit-backdrop-filter: var(--cx-blur);
-	backdrop-filter: var(--cx-blur);
-	border: 1px solid var(--cx-line);
-	border-radius: 1.1rem !important;
-	box-shadow: var(--cx-shadow) !important;
-}
-
-.formDialogHeader,
-.formDialogFooter {
-	background-color: transparent !important;
-	border-color: var(--cx-line) !important;
-}
-
-.MuiTooltip-tooltip,
-.sliderBubble {
-	border-radius: 0.55rem !important;
-	padding: 0.35rem 0.6rem;
-	font-size: 0.8rem;
-}
-
-/* menu rows */
 .actionSheetMenuItem,
 .MuiMenuItem-root,
 .MuiMenu-paper .MuiListItemButton-root {
-	border-radius: 0.55rem !important;
-	margin: 0 0.3rem !important;
+	min-height: 0 !important;
+	padding: 0.5rem 0.75rem !important;
+	margin: 0 !important;
+	border-radius: var(--cx-r-sm) !important;
+	font-size: 0.92rem;
 	transition: background-color var(--cx-fast) ease;
 }
 
 .actionSheetMenuItem:hover,
-.actionSheetMenuItem:focus {
-	background-color: var(--cx-hover) !important;
+.actionSheetMenuItem:focus,
+.MuiMenuItem-root:hover,
+.MuiMenuItem-root.Mui-focusVisible {
+	background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-.actionSheetContent {
-	padding: 0.3rem 0 !important;
+.actionsheetMenuItemIcon,
+.MuiMenu-paper .MuiListItemIcon-root {
+	color: rgba(230, 230, 230, 0.65) !important;
+	font-size: 1.25rem !important;
+	min-width: 0 !important;
+	margin-right: 0.75rem !important;
+}
+
+.actionSheetItemText {
+	font-weight: 500;
 }
 
 .actionsheetDivider,
 .MuiMenu-paper .MuiDivider-root {
+	height: 1px;
+	margin: 0.3rem 0.5rem !important;
 	background-color: var(--cx-line) !important;
 	border-color: var(--cx-line) !important;
 }
 
+.actionSheetTitle {
+	padding: 0.5rem 0.75rem 0.25rem !important;
+	margin: 0 !important;
+	font-size: 0.8rem !important;
+	font-weight: 600;
+	color: var(--cx-text-dim);
+}
+
+/* dialogs: thicker material, larger corners */
+.dialog:not(.dialog-fullscreen):not(.dialog-fullscreen-lowres):not(.actionSheet),
+.MuiDialog-paper {
+	background-color: var(--cx-mat-thick) !important;
+	border-radius: var(--cx-r-xl) !important;
+	overflow: hidden;
+}
+
+.formDialogHeader {
+	background-color: transparent !important;
+	border-bottom: 1px solid var(--cx-line) !important;
+}
+
+.formDialogFooter {
+	background-color: transparent !important;
+	border-top: 1px solid var(--cx-line) !important;
+}
+
+.formDialogHeaderTitle {
+	font-weight: 600;
+}
+
+/* full-screen dialogs (small windows, TV): solid */
+.dialog-fullscreen,
+.dialog-fullscreen-lowres {
+	background-color: var(--cx-bg) !important;
+}
+
 /* the dimmed page behind dialogs */
 .dialogBackdropOpened {
-	opacity: 0.5 !important;
+	opacity: 0.45 !important;
+}
+
+.toast {
+	border-radius: var(--cx-r-lg) !important;
+	font-size: 0.95rem !important;
+}
+
+.MuiTooltip-tooltip,
+.sliderBubble {
+	border-radius: var(--cx-r-sm) !important;
+	padding: 0.3rem 0.55rem !important;
+	font-size: 0.78rem !important;
+	font-weight: 500;
 }
 
 /* ==========================================================================
    4. Controls
    ========================================================================== */
 
-/* text fields, selects */
+/* text fields and selects */
 .emby-input,
 .emby-select,
 .emby-textarea,
 .emby-select-withcolor {
-	background-color: var(--cx-surface) !important;
+	background-color: rgba(255, 255, 255, 0.06) !important;
 	border: 1px solid var(--cx-line) !important;
-	border-radius: 0.6rem !important;
+	border-radius: var(--cx-r-md) !important;
 	color: var(--cx-text) !important;
-	transition: background-color var(--cx-fast) ease, border-color var(--cx-fast) ease;
+	transition: background-color var(--cx-fast) ease, border-color var(--cx-fast) ease, box-shadow var(--cx-fast) ease;
 }
 
 .emby-input:hover,
 .emby-select:hover,
 .emby-textarea:hover {
-	background-color: var(--cx-surface-2) !important;
+	background-color: rgba(255, 255, 255, 0.09) !important;
 }
 
 .emby-input:focus,
 .emby-select:focus,
 .emby-textarea:focus {
-	background-color: var(--cx-surface-2) !important;
-	border-color: var(--cx-line-strong) !important;
+	background-color: rgba(255, 255, 255, 0.09) !important;
+	border-color: rgba(var(--cx-accent-rgb), 0.8) !important;
+	box-shadow: 0 0 0 3px rgba(var(--cx-accent-rgb), 0.3);
+}
+
+.emby-select-withcolor > option {
+	background: var(--cx-surface) !important;
 }
 
 .selectArrow {
 	color: var(--cx-text-dim);
 }
 
-/* buttons */
-.raised:not(.button-submit):not(.cardOverlayButton),
-.emby-button.raised:not(.button-submit) {
-	background-color: var(--cx-raised) !important;
+.inputLabel,
+.selectLabel {
+	color: var(--cx-text-dim) !important;
+	font-weight: 500;
+}
+
+.fieldDescription {
+	color: var(--cx-text-dim) !important;
+}
+
+/* buttons: rounded rectangles */
+.raised,
+.button-submit,
+.button-cancel,
+.button-alt {
+	border-radius: var(--cx-r-md) !important;
+	font-weight: 600 !important;
+	text-transform: none !important;
+	transition: background-color var(--cx-fast) ease, box-shadow var(--cx-fast) ease, filter var(--cx-fast) ease;
+}
+
+.raised:not(.button-submit):not(.cardOverlayButton) {
+	background-color: rgba(255, 255, 255, 0.08) !important;
 	color: var(--cx-text) !important;
 	box-shadow: inset 0 0 0 1px var(--cx-line) !important;
 }
 
-.raised,
-.button-submit,
-.button-cancel {
-	border-radius: 0.6rem !important;
-	transition: background-color var(--cx-fast) ease, box-shadow var(--cx-fast) ease, filter var(--cx-fast) ease;
-}
-
-.raised:not(.button-submit):hover {
-	background-color: #333 !important;
-	box-shadow: inset 0 0 0 1px var(--cx-line-strong) !important;
+.raised:not(.button-submit):not(.cardOverlayButton):hover {
+	background-color: rgba(255, 255, 255, 0.13) !important;
 }
 
 .button-submit {
 	background: var(--cx-accent) !important;
 	color: #fff !important;
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
 }
 
 .button-submit:hover {
 	filter: brightness(1.1);
 }
 
+.button-flat:hover,
+.button-link {
+	color: var(--cx-text) !important;
+}
+
+.button-link:hover {
+	color: #fff !important;
+	text-decoration: underline;
+}
+
 /* checkboxes */
 .checkboxOutline {
-	border-radius: 0.3rem !important;
+	border-radius: var(--cx-r-xs) !important;
 	border-color: var(--cx-line-strong) !important;
+}
+
+.emby-checkbox:checked + span + .checkboxOutline {
+	background-color: var(--cx-accent) !important;
+	border-color: var(--cx-accent) !important;
 }
 
 /* toggles */
 .mdl-switch__track {
-	background-color: var(--cx-raised) !important;
+	background-color: rgba(255, 255, 255, 0.16) !important;
+	border-radius: 99px !important;
 	transition: background-color var(--cx-med) ease;
 }
 
 .mdl-switch__input:checked + .mdl-switch__label + .mdl-switch__track,
 .mdl-switch.is-checked .mdl-switch__track {
-	background-color: rgba(var(--cx-accent-rgb), 0.5) !important;
-}
-
-.mdl-switch__input:checked + .mdl-switch__label + .mdl-switch__track + .mdl-switch__thumb,
-.mdl-switch.is-checked .mdl-switch__thumb {
 	background-color: var(--cx-accent) !important;
 }
 
-/* sliders (stock thumbs are hard-coded blue) */
+.mdl-switch__thumb {
+	background-color: #fff !important;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* sliders: thin rounded track, white thumb */
+.mdl-slider-background-flex {
+	border-radius: 99px;
+	overflow: hidden;
+}
+
 .mdl-slider-background-lower {
 	background-color: var(--cx-accent) !important;
 }
 
 .mdl-slider-background-upper {
-	background-color: rgba(255, 255, 255, 0.18) !important;
+	background-color: rgba(255, 255, 255, 0.2) !important;
 }
 
 .mdl-slider::-webkit-slider-thumb {
 	background: #fff !important;
-	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
 }
 
 .mdl-slider::-moz-range-thumb {
 	background: #fff !important;
-	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+	border: 0 !important;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
 }
 
-/* list rows (settings, episodes, tracks) */
+/* list rows (settings, tracks, search results) */
 .listItem {
-	border-radius: 0.6rem;
+	border-radius: var(--cx-r-md);
 	transition: background-color var(--cx-fast) ease;
 }
 
-.listItem:hover {
+.listItem-button:hover,
+.listItem.listItem-hoverable:hover {
 	background-color: var(--cx-hover);
 }
 
@@ -381,52 +516,88 @@ html {
 .paperList {
 	background-color: var(--cx-surface) !important;
 	box-shadow: inset 0 0 0 1px var(--cx-line);
-	border-radius: 0.75rem !important;
+	border-radius: var(--cx-r-lg) !important;
+	overflow: hidden;
+}
+
+/* generic icon buttons: rounded squares with a neutral hover */
+.paper-icon-button-light {
+	border-radius: var(--cx-r-md) !important;
+}
+
+.paper-icon-button-light:hover:not(:disabled) {
+	background-color: var(--cx-hover) !important;
+	color: #fff !important;
 }
 
 /* ==========================================================================
-   5. Navigation
+   5. Header, tabs, frame and drawer
    ========================================================================== */
 
-/* --- header (classic layout) ------------------------------------------- */
+/* --- header: frosted glass (classic and experimental layouts) ------------ */
 
-.skinHeader-withBackground:not(.semiTransparent):not(.osdHeader) {
-	background-color: var(--cx-chrome) !important;
-	background-image: none !important;
+.skinHeader {
+	contain: none !important;   /* stock paint containment would clip the frame */
 }
 
-/* over a details backdrop: glass */
-.skinHeader.semiTransparent {
-	background-color: var(--cx-glass-thin) !important;
+.skinHeader-withBackground:not(.osdHeader),
+.MuiAppBar-root {
+	background-color: var(--cx-mat-header) !important;
+	background-image: none !important;
 	-webkit-backdrop-filter: var(--cx-blur) !important;
 	backdrop-filter: var(--cx-blur) !important;
+	box-shadow: none !important;
 }
 
+/* over a details backdrop: no band, a blur that fades out downwards */
+.skinHeader.semiTransparent,
+body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root {
+	background: transparent !important;
+	-webkit-backdrop-filter: none !important;
+	backdrop-filter: none !important;
+}
+
+.skinHeader.semiTransparent::before,
+body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
+	content: "";
+	position: absolute;
+	inset: 0 0 -2.5rem;
+	z-index: -1;
+	pointer-events: none;
+	background: linear-gradient(180deg, rgba(12, 12, 13, 0.5), rgba(12, 12, 13, 0));
+	-webkit-backdrop-filter: blur(18px) saturate(160%);
+	backdrop-filter: blur(18px) saturate(160%);
+	-webkit-mask-image: linear-gradient(180deg, #000 45%, transparent);
+	mask-image: linear-gradient(180deg, #000 45%, transparent);
+}
+
+/* header buttons */
 .skinHeader:not(.osdHeader) .headerButton:not(.headerUserButton),
 .MuiAppBar-root .MuiIconButton-root {
-	border-radius: 0.8rem !important;
-	color: rgba(230, 230, 230, 0.6) !important;
+	border-radius: var(--cx-r-md) !important;
+	color: rgba(230, 230, 230, 0.7) !important;
 	transition: background-color var(--cx-fast) ease, color var(--cx-fast) ease;
 }
 
 .skinHeader:not(.osdHeader) .headerButton:not(.headerUserButton):hover,
 .MuiAppBar-root .MuiIconButton-root:hover {
-	background-color: var(--cx-hover) !important;
-	color: var(--cx-text) !important;
-}
-
-/* avatar with an accent ring */
-.headerUserButtonRound,
-.MuiAppBar-root .MuiAvatar-root {
-	box-shadow: 0 0 0 2px var(--cx-chrome), 0 0 0 3.5px rgba(var(--cx-accent-rgb), 0.85);
-}
-
-.headerUserButton .headerUserButtonRound {
-	box-shadow: none;
+	background-color: rgba(255, 255, 255, 0.09) !important;
+	color: #fff !important;
 }
 
 .headerUserButton:hover {
 	background-color: transparent !important;
+}
+
+/* avatar with an accent ring */
+.headerUserButtonRound:not(.headerUserButton),
+.MuiAppBar-root .MuiAvatar-root {
+	box-shadow: 0 0 0 2px rgba(14, 14, 14, 0.9), 0 0 0 3.5px rgba(var(--cx-accent-rgb), 0.85);
+}
+
+.MuiAppBar-root .MuiAvatar-root {
+	width: 30px !important;
+	height: 30px !important;
 }
 
 .pageTitle {
@@ -434,64 +605,82 @@ html {
 	font-weight: 600;
 }
 
-/* tabs: dim-to-bright, the selected one tinted with the accent */
+/* --- tabs: one segmented control ----------------------------------------- */
+
+.headerTabs .emby-tabs-slider,
+.sectionTabs .emby-tabs-slider {
+	display: inline-flex !important;
+	gap: 2px;
+	padding: 3px !important;
+	border-radius: calc(var(--cx-r-md) + 3px);
+	background-color: rgba(255, 255, 255, 0.06);
+	box-shadow: inset 0 0 0 1px var(--cx-line);
+}
+
 .emby-tab-button {
-	border-radius: 0.8rem !important;
-	color: rgba(230, 230, 230, 0.55) !important;
-	font-weight: 500;
+	padding: 0.42em 1.05em !important;
+	margin: 0 !important;
+	border-radius: var(--cx-r-md) !important;
+	color: rgba(230, 230, 230, 0.62) !important;
+	font-weight: 500 !important;
+	font-size: 0.92rem;
 	transition: background-color var(--cx-fast) ease, color var(--cx-fast) ease;
 }
 
 .emby-tab-button:hover {
-	background-color: var(--cx-hover) !important;
-	color: rgba(230, 230, 230, 0.9) !important;
+	color: #fff !important;
+	background-color: rgba(255, 255, 255, 0.05) !important;
 }
 
 .emby-tab-button-active,
 .emby-tab-button-active:hover {
-	background-color: rgba(var(--cx-accent-rgb), 0.12) !important;
-	color: var(--cx-accent) !important;
+	background-color: rgba(255, 255, 255, 0.14) !important;
+	color: #fff !important;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-.emby-tabs-slider {
-	padding: 0.25rem 0;
+.emby-tab-button .emby-button-foreground {
+	transform: none !important;
 }
 
-.emby-tab-button-ripple-effect,
-.emby-tabs-slider .emby-tab-button::after {
-	display: none !important;
+/* below 100em the tabs get their own row under the header buttons */
+.headerTabs {
+	padding: 0.35rem 0 0.6rem;
 }
 
-/* --- header (experimental layout) -------------------------------------- */
-
-.MuiAppBar-root {
-	background-color: var(--cx-chrome) !important;
-	background-image: none !important;
-	box-shadow: none !important;
+/* from 100em up Jellyfin pulls the tabs up into the button row with a
+   negative margin, which leaves the header box shorter than its buttons.
+   Centre them over the row instead, out of the flow, so the header's
+   height (and the frame under it) stays right. */
+@media (min-width: 100em) {
+	.skinHeader .headerTabs {
+		position: absolute !important;
+		top: 0;
+		bottom: 0;
+		left: 50%;
+		margin: 0 !important;
+		padding: 0 !important;
+		transform: translateX(-50%);
+		display: flex !important;
+		align-items: center;
+	}
 }
 
-/* on details pages and while playing it floats over artwork */
-body:has(.itemDetailPage:not(.hide)) .MuiAppBar-root,
-body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
-	background-color: var(--cx-glass-thin) !important;
-	-webkit-backdrop-filter: var(--cx-blur);
-	backdrop-filter: var(--cx-blur);
-}
+/* --- experimental layout's toolbar ---------------------------------------- */
 
 .MuiAppBar-root .MuiButton-root {
-	border-radius: 0.8rem !important;
-	color: rgba(230, 230, 230, 0.6) !important;
+	border-radius: var(--cx-r-md) !important;
+	color: rgba(230, 230, 230, 0.65) !important;
 	font-weight: 500;
 	text-transform: none;
 	transition: background-color var(--cx-fast) ease, color var(--cx-fast) ease;
 }
 
 .MuiAppBar-root .MuiButton-root:hover {
-	background-color: var(--cx-hover) !important;
-	color: rgba(230, 230, 230, 0.95) !important;
+	background-color: rgba(255, 255, 255, 0.08) !important;
+	color: #fff !important;
 }
 
-/* the app name / logo at the left stays bright */
 .MuiAppBar-root .MuiToolbar-root > .MuiStack-root > .MuiButton-root:first-child {
 	color: var(--cx-text) !important;
 	font-weight: 600;
@@ -499,18 +688,20 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 
 /* the current library */
 .MuiAppBar-root a.MuiButton-root:is([aria-current], .Mui-selected, .MuiButton-textPrimary) {
-	background-color: rgba(var(--cx-accent-rgb), 0.12) !important;
-	color: var(--cx-accent) !important;
+	background-color: rgba(255, 255, 255, 0.12) !important;
+	color: #fff !important;
 }
 
-/* library toolbar (Play All / Shuffle): neutral glass, not accent */
+.MuiAppBar-root a.MuiButton-root:is([aria-current], .Mui-selected, .MuiButton-textPrimary) .MuiButton-startIcon {
+	color: var(--cx-accent);
+}
+
+/* Play All / Shuffle */
 .MuiAppBar-root .MuiButton-contained,
 .MuiAppBar-root .MuiButtonGroup-root .MuiButton-root {
 	background-color: rgba(255, 255, 255, 0.08) !important;
 	color: var(--cx-text) !important;
-	box-shadow: inset 0 0 0 1px var(--cx-line) !important;
-	-webkit-backdrop-filter: var(--cx-blur);
-	backdrop-filter: var(--cx-blur);
+	box-shadow: none !important;
 }
 
 .MuiAppBar-root .MuiButton-contained:hover,
@@ -518,85 +709,120 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 	background-color: rgba(255, 255, 255, 0.14) !important;
 }
 
+.MuiAppBar-root .MuiButtonGroup-root {
+	border-radius: var(--cx-r-md);
+	box-shadow: inset 0 0 0 1px var(--cx-line);
+	overflow: hidden;
+}
+
 .MuiAppBar-root .MuiButtonGroup-root .MuiButton-root:not(:last-child) {
 	border-right: 1px solid var(--cx-line) !important;
 }
 
-.MuiAppBar-root .MuiButtonGroup-root {
-	border-radius: 0.8rem;
-	box-shadow: none;
-	overflow: hidden;
-}
-
 .MuiAppBar-root .MuiTabs-indicator {
-	background-color: var(--cx-accent) !important;
+	background-color: #fff !important;
 	border-radius: 99px;
 }
 
 .MuiAppBar-root .MuiTab-root {
 	text-transform: none;
-	color: rgba(230, 230, 230, 0.55);
+	color: rgba(230, 230, 230, 0.6);
 }
 
 .MuiAppBar-root .MuiTab-root.Mui-selected {
-	color: var(--cx-accent) !important;
-}
-
-.MuiAppBar-root .MuiAvatar-root {
-	width: 32px;
-	height: 32px;
+	color: #fff !important;
 }
 
 /* --- frame ----------------------------------------------------------------
-   The header bar and a thin strip down the sides and bottom are one dark
-   chrome that wraps the content, which sits on a slightly lighter canvas
-   with rounded corners and a hairline edge.  Drawn as a fixed overlay with
-   a huge spread shadow, so the page can scroll underneath.  Left out on
-   details pages, in the player, on login and in the dashboard; browsers
-   without :has() simply skip it. */
+   Like the Stremio theme: a dark chrome strip down the sides and along the
+   bottom, and the content on a rounded card with a hairline edge.  The page
+   scrolls under the glass header, so the card starts at the header's bottom
+   edge, whatever height the header has on that page:
+     - the top half hangs off the header (::after, top: 100%)
+     - the bottom corners are a separate strip fixed to the bottom of the
+       window (body::before)
+   Each is a transparent box with a huge chrome shadow around it, clipped so
+   the shadow never reaches above the box.  Left out on details pages, in the
+   player, on login and in the dashboard; browsers without :has() skip it. */
 
 @media (min-width: 641px) {
-	body:has(.MuiAppBar-root):not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .MuiDrawer-docked))::after {
+	body:not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .type-interior:not(.hide), .MuiDrawer-docked)):not(:has(.MuiAppBar-root)) .skinHeader:not(.semiTransparent):not(.osdHeader):not(.hide)::after,
+	body:not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .type-interior:not(.hide), .MuiDrawer-docked)) .MuiAppBar-root::after {
+		content: "";
+		position: absolute;
+		top: 100%;
+		left: var(--cx-frame-gap);
+		right: var(--cx-frame-gap);
+		height: 100vh;
+		border-radius: var(--cx-frame-radius) var(--cx-frame-radius) 0 0;
+		box-shadow: 0 0 0 100vmax var(--cx-chrome), inset 0 0 0 1px var(--cx-line-strong);
+		clip-path: inset(0 -100vmax -100vmax -100vmax);
+		pointer-events: none;
+	}
+
+	body:not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .type-interior:not(.hide), .MuiDrawer-docked)):has(.skinHeader:not(.semiTransparent):not(.osdHeader):not(.hide), .MuiAppBar-root)::before {
 		content: "";
 		position: fixed;
-		top: 48px;
-		left: 1.25rem;
-		right: 1.25rem;
-		bottom: 1.25rem;
-		border-radius: 1rem;
-		box-shadow: 0 0 0 100vmax var(--cx-chrome), inset 0 0 0 1px var(--cx-line-strong);
+		left: var(--cx-frame-gap);
+		right: var(--cx-frame-gap);
+		bottom: var(--cx-frame-gap);
+		height: var(--cx-frame-radius);
+		box-sizing: border-box;
+		border: 1px solid var(--cx-line-strong);
+		border-top: 0;
+		border-radius: 0 0 var(--cx-frame-radius) var(--cx-frame-radius);
+		box-shadow: 0 0 0 100vmax var(--cx-chrome);
+		clip-path: inset(0 -100vmax -100vmax -100vmax);
 		pointer-events: none;
-		z-index: 900;
+		z-index: 1000;   /* just above the classic header, below dialogs */
+	}
+
+	body:has(.MuiAppBar-root)::before {
+		z-index: 1101 !important;   /* just above the experimental header */
 	}
 }
 
-/* --- side drawer --------------------------------------------------------- */
+/* --- side drawer ---------------------------------------------------------- */
 
 .mainDrawer,
 .MuiDrawer-paper {
-	background-color: var(--cx-chrome) !important;
+	background-color: var(--cx-mat-thick) !important;
 	background-image: none !important;
-	border-right: 1px solid var(--cx-line) !important;
+	-webkit-backdrop-filter: var(--cx-blur);
+	backdrop-filter: var(--cx-blur);
+	box-shadow: inset -1px 0 0 var(--cx-line), var(--cx-shadow) !important;
+	border-right: 0 !important;
+}
+
+.mainDrawer-scrollContainer {
+	padding: 0.5rem 0;
 }
 
 .navMenuOption,
 .MuiDrawer-paper .MuiListItemButton-root {
-	border-radius: 0.6rem !important;
-	margin: 0.1rem 0.5rem !important;
-	color: rgba(230, 230, 230, 0.7);
+	border-radius: var(--cx-r-sm) !important;
+	margin: 1px 0.6rem !important;
+	padding-top: 0.55rem !important;
+	padding-bottom: 0.55rem !important;
+	color: rgba(230, 230, 230, 0.78) !important;
 	transition: background-color var(--cx-fast) ease, color var(--cx-fast) ease;
 }
 
 .navMenuOption:hover,
 .MuiDrawer-paper .MuiListItemButton-root:hover {
-	background-color: var(--cx-hover) !important;
-	color: var(--cx-text);
+	background-color: rgba(255, 255, 255, 0.08) !important;
+	color: #fff !important;
 }
 
 .navMenuOption.navMenuOption-selected,
 .MuiDrawer-paper .MuiListItemButton-root.Mui-selected {
-	background: rgba(var(--cx-accent-rgb), 0.12) !important;
-	color: var(--cx-accent) !important;
+	background: rgba(255, 255, 255, 0.12) !important;
+	color: #fff !important;
+}
+
+.navMenuOptionIcon,
+.MuiDrawer-paper .MuiListItemIcon-root {
+	color: rgba(230, 230, 230, 0.6) !important;
 }
 
 .navMenuOption-selected .navMenuOptionIcon,
@@ -608,38 +834,74 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 .MuiDrawer-paper .MuiListSubheader-root {
 	color: var(--cx-text-dim) !important;
 	background: transparent !important;
-	font-size: 0.75rem;
-	font-weight: 600;
-	letter-spacing: 0.04em;
+	font-size: 0.72rem !important;
+	font-weight: 600 !important;
+	letter-spacing: 0.06em;
 	text-transform: uppercase;
+	padding-left: 1.6rem !important;
 }
 
-.sidebarDivider {
+.sidebarDivider,
+.MuiDrawer-paper .MuiDivider-root {
 	background-color: var(--cx-line) !important;
-}
-
-/* --- search ------------------------------------------------------------ */
-
-.searchFields .emby-input,
-.MuiAppBar-root .MuiInputBase-root {
-	background-color: var(--cx-surface) !important;
-	border-radius: 99px !important;
+	border-color: var(--cx-line) !important;
+	margin: 0.5rem 1rem !important;
 }
 
 /* ==========================================================================
-   6. Cards and rows
+   6. Cards
    ========================================================================== */
 
-.cardBox,
-.cardScalable {
-	transition: none;
+/* corners: every layer of a card uses the same radius */
+.cardScalable,
+.cardPadder,
+.cardContent,
+.cardImageContainer,
+.cardOverlayContainer,
+.blurhash-canvas,
+.visualCardBox,
+.listItemImage {
+	border-radius: var(--jf-card-borderRadius) !important;
 }
 
-/* a white ring on the hovered/focused poster */
-.card:is(:hover, :focus, :focus-within) .cardBox:not(.visualCardBox) .cardScalable,
-.card:is(:hover, :focus, :focus-within) .visualCardBox {
-	box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85) !important;
-	border-radius: var(--jf-card-borderRadius);
+.cardBox:not(.visualCardBox) .cardPadder {
+	background-color: var(--cx-surface-2) !important;
+	box-shadow: none !important;
+}
+
+.defaultCardBackground {
+	background-color: var(--cx-surface-2) !important;
+}
+
+.visualCardBox {
+	background-color: var(--cx-surface) !important;
+	box-shadow: inset 0 0 0 1px var(--cx-line);
+}
+
+/* hover: the poster lifts a little and its edge lights up.  The edge is drawn
+   inside the poster (no ring outside it), on top of the artwork. */
+.cardScalable {
+	transition: transform var(--cx-med) var(--cx-ease), box-shadow var(--cx-med) var(--cx-ease);
+}
+
+.cardScalable::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+	pointer-events: none;
+	z-index: 2;
+	transition: box-shadow var(--cx-med) var(--cx-ease);
+}
+
+.layout-desktop .card-hoverable:is(:hover, :focus-within) .cardScalable {
+	transform: translateY(-3px) scale(1.025);
+	box-shadow: 0 18px 36px -16px rgba(0, 0, 0, 0.75);
+}
+
+.card-hoverable:is(:hover, :focus-within) .cardScalable::after {
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
 }
 
 /* TV focus border (stock: accent) */
@@ -648,81 +910,122 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 	border-color: transparent !important;
 }
 
-.cardScalable,
-.cardContent,
-.cardImageContainer,
-.cardOverlayContainer,
-.blurhash-canvas {
-	border-radius: var(--jf-card-borderRadius) !important;
-}
-
-.visualCardBox {
-	background-color: var(--cx-surface) !important;
-	box-shadow: inset 0 0 0 1px var(--cx-line);
-}
-
-.defaultCardBackground {
-	background-color: var(--cx-surface-2) !important;
-}
-
-/* nothing on a card zooms; the overlay is a light tint */
+/* hover overlay.  Stock fades the whole overlay from transparent, which
+   keeps its glass buttons from blurring until the fade ends; here the
+   overlay itself never fades: its tint and each button fade on their own. */
 .cardOverlayContainer {
-	background: rgba(0, 0, 0, 0.18) !important;
-	transition: opacity var(--cx-fast) ease !important;
+	opacity: 1 !important;
+	background: transparent !important;
+	transition: none !important;
 }
 
-/* things layered over artwork get translucent tints (no blur on cards:
-   it costs a layer per card) */
-/* hovering the play bubble softly frosts the whole poster behind it */
-.cardOverlayContainer:has(.cardOverlayFab-primary:hover) {
-	-webkit-backdrop-filter: blur(6px);
-	backdrop-filter: blur(6px);
+.cardOverlayContainer::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	background: linear-gradient(180deg, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.45));
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity var(--cx-med) ease;
 }
 
-.cardOverlayButton {
-	background-color: rgba(16, 16, 16, 0.4) !important;
-	-webkit-backdrop-filter: blur(10px) saturate(160%);
-	backdrop-filter: blur(10px) saturate(160%);
-	border-radius: 50% !important;
-	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+.cardOverlayContainer > *,
+.cardOverlayContainer .cardOverlayButton-hover {
+	opacity: 0;
+	transition: opacity var(--cx-med) ease, background-color var(--cx-fast) ease, transform var(--cx-med) var(--cx-ease) !important;
+}
+
+.card-hoverable:is(:hover, :focus-within) .cardOverlayContainer::before,
+.card-hoverable:is(:hover, :focus-within) .cardOverlayContainer > *,
+.card-hoverable:is(:hover, :focus-within) .cardOverlayContainer .cardOverlayButton-hover {
+	opacity: 1;
+}
+
+/* the play button in the middle: a frosted rounded square */
+.cardOverlayContainer > .cardOverlayFab-primary {
+	width: 3.1em !important;
+	height: 3.1em !important;
+	margin: -1.55em 0 0 -1.55em !important;
+	border: 0 !important;
+	border-radius: var(--cx-r-lg) !important;
+	background-color: var(--cx-glass-btn) !important;
+	-webkit-backdrop-filter: var(--cx-blur-sm);
+	backdrop-filter: var(--cx-blur-sm);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22), 0 8px 20px -8px rgba(0, 0, 0, 0.6) !important;
 	color: #fff !important;
-	transition: background-color var(--cx-fast) ease;
+	transform: scale(0.92);
 }
 
-.cardOverlayButton:hover {
-	background-color: rgba(16, 16, 16, 0.8) !important;
+.card-hoverable:is(:hover, :focus-within) .cardOverlayContainer > .cardOverlayFab-primary {
+	transform: scale(1);
 }
 
-/* the play bubble in the middle: frosted glass (only one card is hovered
-   at a time, so the blur costs one layer) */
-.cardOverlayFab-primary {
-	background-color: rgba(20, 20, 20, 0.35) !important;
-	-webkit-backdrop-filter: blur(14px) saturate(170%);
-	backdrop-filter: blur(14px) saturate(170%);
-	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28), 0 6px 18px -6px rgba(0, 0, 0, 0.5) !important;
-	color: #fff !important;
+.cardOverlayContainer > .cardOverlayFab-primary:hover {
+	background-color: var(--cx-glass-btn-h) !important;
+	transform: scale(1.06) !important;
 }
 
-.cardOverlayFab-primary:hover {
-	background-color: rgba(255, 255, 255, 0.18) !important;
+/* the small buttons along the bottom (watched, favourite, more) */
+.cardOverlayButton-hover {
+	width: 2.1em;
+	height: 2.1em;
+	padding: 0 !important;
+	margin: 0 0.25em 0.4em 0 !important;
+	display: inline-flex !important;
+	align-items: center;
+	justify-content: center;
+	border-radius: var(--cx-r-sm) !important;
+	background-color: var(--cx-glass-dark) !important;
+	-webkit-backdrop-filter: var(--cx-blur-sm);
+	backdrop-filter: var(--cx-blur-sm);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+	color: rgba(255, 255, 255, 0.92) !important;
 }
 
-/* watched / unplayed-count badges */
+.cardOverlayButton-hover:hover {
+	background-color: var(--cx-glass-btn-h) !important;
+}
+
+.cardOverlayButton-hover .cardOverlayButtonIcon {
+	font-size: 1.15em !important;
+}
+
+.cardOverlayButton-br {
+	right: 0.15em !important;
+}
+
+/* watched / unplayed-count badges: small frosted circles */
 .playedIndicator,
 .countIndicator,
 .mediaSourceIndicator,
 .fullSyncIndicator {
-	background: rgba(18, 18, 18, 0.72) !important;
+	background: var(--cx-glass-dark) !important;
+	-webkit-backdrop-filter: var(--cx-blur-sm);
+	backdrop-filter: var(--cx-blur-sm);
 	color: #fff !important;
-	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+	font-weight: 600;
 }
 
-/* progress bars */
+/* progress: a thin rounded bar inset from the poster's edges */
+.innerCardFooter {
+	background: transparent !important;
+}
+
+.innerCardFooter:has(> .itemProgressBar:only-child) {
+	left: 0.55rem !important;
+	right: 0.55rem !important;
+	bottom: 0.55rem !important;
+	width: auto !important;
+}
+
 .itemProgressBar {
-	background-color: rgba(255, 255, 255, 0.2) !important;
-	height: 0.25em !important;
+	height: 4px !important;
 	border-radius: 99px;
 	overflow: hidden;
+	background-color: rgba(255, 255, 255, 0.28) !important;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
 
 .itemProgressBarForeground {
@@ -730,70 +1033,127 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 	border-radius: 99px;
 }
 
+/* card text */
+.cardText {
+	font-size: 0.9rem;
+}
+
+.cardText-first {
+	font-weight: 500;
+	color: var(--cx-text);
+}
+
 .cardText-secondary,
 .cardText-secondary * {
 	color: var(--cx-text-dim) !important;
+	font-size: 0.82rem;
+}
+
+/* library tiles with the name drawn on the artwork ("My Media") */
+.cardImageContainer .cardText.cardTextCentered {
+	font-weight: 700;
+	letter-spacing: -0.02em;
+	text-shadow: 0 2px 16px rgba(0, 0, 0, 0.6);
 }
 
 /* row headers */
 .sectionTitle,
 .sectionTitle-cards {
-	font-weight: 600 !important;
-	letter-spacing: -0.01em;
+	font-weight: 700 !important;
+	letter-spacing: -0.02em;
 }
 
 .sectionTitleTextButton:hover,
 .sectionTitleTextButton:hover .sectionTitle {
-	color: var(--cx-accent) !important;
+	color: #fff !important;
+	opacity: 0.8;
+}
+
+/* rows scroll with their arrow buttons; no scrollbar under each row */
+.emby-scroller.scrollX,
+.itemsContainer.scrollX {
+	scrollbar-width: none;
+}
+
+.emby-scroller.scrollX::-webkit-scrollbar,
+.itemsContainer.scrollX::-webkit-scrollbar {
+	display: none;
+}
+
+/* A-Z picker: inside the frame */
+@media (min-width: 641px) {
+	.alphaPicker-fixed-right {
+		right: calc(var(--cx-frame-gap) + 0.35rem) !important;
+	}
+}
+
+.alphaPickerButton {
+	border-radius: var(--cx-r-xs) !important;
+	color: var(--cx-text-dim) !important;
+}
+
+.alphaPickerButton:hover,
+.alphaPickerButton-selected {
+	background-color: var(--cx-hover) !important;
+	color: #fff !important;
 }
 
 /* row arrows */
 .emby-scrollbuttons-button {
-	border-radius: 0.6rem !important;
+	border-radius: var(--cx-r-md) !important;
 	color: rgba(230, 230, 230, 0.6) !important;
 }
 
 .emby-scrollbuttons-button:hover:not(:disabled) {
 	background-color: var(--cx-hover) !important;
-	color: var(--cx-text) !important;
-}
-
-/* generic icon buttons: subtle white hover instead of accent */
-.paper-icon-button-light:hover:not(:disabled) {
-	background-color: var(--cx-hover);
-	color: var(--cx-text);
+	color: #fff !important;
 }
 
 /* ==========================================================================
-   7. Details page and settings
+   7. Details pages
    ========================================================================== */
 
-/* the ribbon under the backdrop: frosted (hairlines are inset shadows, as
-   real borders push the ribbon off the floated poster) */
+/* the stock ribbon under the backdrop (episodes, people, albums, ...):
+   frosted.  Hairlines are inset shadows, as real borders push the ribbon
+   off the floated poster. */
 .detailRibbon {
-	background: rgba(20, 20, 20, 0.6) !important;
-	-webkit-backdrop-filter: blur(20px);
-	backdrop-filter: blur(20px);
+	background: rgba(20, 20, 20, 0.55) !important;
+	-webkit-backdrop-filter: var(--cx-blur);
+	backdrop-filter: var(--cx-blur);
 	box-shadow: inset 0 1px 0 var(--cx-line), inset 0 -1px 0 var(--cx-line);
 }
 
-/* round action buttons */
-.detailButton {
-	border-radius: 50% !important;
-	background-color: var(--cx-glass-thin) !important;
-	box-shadow: inset 0 0 0 1px var(--cx-line);
-	transition: background-color var(--cx-fast) ease, filter var(--cx-fast) ease;
+.detailImageContainer .card .cardScalable,
+.detailImageContainer .cardImageContainer {
+	border-radius: var(--cx-r-lg) !important;
+	box-shadow: var(--cx-shadow) !important;
 }
 
+/* action buttons: frosted rounded squares */
 .detailButton:not(.hide) {
-	width: 2.6rem;
-	height: 2.6rem;
-	margin: 0 0.18rem !important;
+	width: 2.75rem;
+	height: 2.75rem;
+	margin: 0 0.2rem !important;
 	padding: 0 !important;
 	display: inline-flex !important;
 	flex-direction: row !important;
 	align-items: center;
 	justify-content: center;
+	border-radius: var(--cx-r-md) !important;
+	background-color: var(--cx-glass-btn) !important;
+	-webkit-backdrop-filter: var(--cx-blur-sm);
+	backdrop-filter: var(--cx-blur-sm);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+	color: #fff !important;
+	transition: background-color var(--cx-fast) ease, transform var(--cx-fast) ease;
+}
+
+.detailButton:not(.hide):hover {
+	background-color: var(--cx-glass-btn-h) !important;
+}
+
+.detailButton:not(.hide):active {
+	transform: scale(0.96);
 }
 
 .detailButton-content {
@@ -806,89 +1166,89 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 	font-size: 1.3rem !important;
 }
 
-.detailButton:hover {
-	background-color: var(--cx-active) !important;
-	color: var(--cx-text) !important;
+/* Play / Resume: a wider, brighter glass rounded rectangle with its label */
+.mainDetailButtons > .btnPlay.detailButton:not(.hide) {
+	width: auto;
+	min-width: 8.5rem;
+	padding: 0 1.3rem 0 1rem !important;
+	margin-right: 0.45rem !important;
+	gap: 0.35rem;
+	background-color: rgba(255, 255, 255, 0.2) !important;
+	-webkit-backdrop-filter: var(--cx-blur);
+	backdrop-filter: var(--cx-blur);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 8px 24px -10px rgba(0, 0, 0, 0.6) !important;
+	font-weight: 600;
 }
 
-/* Play: brighter frosted glass instead of a solid colour */
-.detailButton.btnPlay {
-	background-color: rgba(255, 255, 255, 0.14) !important;
-	-webkit-backdrop-filter: blur(16px) saturate(170%);
-	backdrop-filter: blur(16px) saturate(170%);
-	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24), 0 8px 24px -10px rgba(0, 0, 0, 0.6);
+.mainDetailButtons > .btnPlay.detailButton:not(.hide):hover {
+	background-color: rgba(255, 255, 255, 0.28) !important;
+}
+
+.mainDetailButtons > .btnPlay.detailButton:not(.hide)::after {
+	content: attr(title);
+	font-size: 0.95rem;
+}
+
+.mainDetailButtons > .btnPlay .detailButton-icon {
+	font-size: 1.6rem !important;
+}
+
+.playstatebutton-icon-played {
 	color: #fff !important;
 }
 
-.detailButton.btnPlay:hover {
-	background-color: rgba(255, 255, 255, 0.22) !important;
+.playstatebutton-icon-unplayed,
+.listViewUserDataButtons .listItemButton:not(.playstatebutton-played) .material-icons {
+	color: rgba(230, 230, 230, 0.45) !important;
 }
 
-.detailImageContainer .card .cardScalable,
-.detailImageContainer .cardImageContainer {
-	border-radius: 0.9rem !important;
-	box-shadow: var(--cx-shadow), 0 0 0 1px var(--cx-line) !important;
+.ratingbutton-icon-withrating {
+	color: #ff6b81 !important;
 }
 
 .itemName,
 .parentName {
-	font-weight: 600 !important;
-	letter-spacing: -0.01em;
+	font-weight: 700 !important;
+	letter-spacing: -0.02em;
+}
+
+.nameContainer .itemName {
+	color: var(--cx-text) !important;
+}
+
+.nameContainer .parentName,
+.nameContainer .parentName a {
+	color: var(--cx-text-dim) !important;
 }
 
 .itemMiscInfo,
 .mediaInfoItem {
-	color: var(--cx-text-dim);
+	color: rgba(230, 230, 230, 0.78);
 }
 
 .mediaInfoOfficialRating,
 .mediaInfoText {
-	border-color: var(--cx-line-strong) !important;
-	border-radius: 0.35rem !important;
-}
-
-/* genre / tag / link chips */
-.itemGenres a,
-.itemTags a,
-.itemExternalLinks a,
-.detailsGroupItem .content a {
-	color: var(--cx-text) !important;
-	transition: color var(--cx-fast) ease;
-}
-
-.itemGenres a:hover,
-.itemTags a:hover,
-.itemExternalLinks a:hover,
-.detailsGroupItem .content a:hover {
-	color: var(--cx-accent) !important;
-}
-
-.overview-expand {
-	color: var(--cx-accent) !important;
-}
-
-/* track selects (Video / Audio / Subtitles) */
-.detailTrackSelect,
-.trackSelections .selectContainer .emby-select {
-	background-color: transparent !important;
-	border-color: transparent !important;
-}
-
-.trackSelections .selectContainer .emby-select:hover {
-	background-color: var(--cx-hover) !important;
+	border: 1px solid rgba(255, 255, 255, 0.3) !important;
+	border-radius: var(--cx-r-xs) !important;
+	background: transparent !important;
+	font-size: 0.75em !important;
+	font-weight: 600;
 }
 
 /* --- hero layout for movies, series and seasons (after ElegantFin) -------
-   A tall backdrop that fades into the page, the poster dropped in favour of
-   it, and the clear logo (or the title), info and buttons centred at its
-   foot.  Episodes, people, albums and the rest keep the stock layout. */
+   A tall backdrop that fades smoothly into the page, the poster dropped in
+   favour of it, and the clear logo (or the title), info and buttons centred
+   at its foot.  Episodes, people, albums and the rest keep the stock layout.
+   Works whether the artwork is the page's own backdrop or the app-wide one
+   ("Backdrops" in Display settings). */
 
 .layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) {
-	--cx-hero: 72vh;
+	--cx-hero: 74vh;
 }
 
 .layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) .itemBackdrop {
 	height: var(--cx-hero) !important;
+	background-position: center 20% !important;
 }
 
 /* experimental layout: run the backdrop up under the glass header */
@@ -897,30 +1257,46 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 	height: calc(var(--cx-hero) + 48px) !important;
 }
 
-/* fade the artwork into the page: a little shade under the header, clear
-   through the middle, then down into the background colour */
+/* the fade: a little shade under the header, clear through the middle,
+   then an eased ramp (many stops, so no visible bands or edge) down to the
+   page colour */
 .layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) .itemBackdrop::before {
 	content: "";
 	position: absolute;
 	inset: 0;
-	background: linear-gradient(180deg,
-		rgba(14, 14, 14, 0.45) 0,
-		rgba(14, 14, 14, 0) 18%,
-		rgba(20, 20, 20, 0) 38%,
-		rgba(20, 20, 20, 0.55) 66%,
-		rgba(20, 20, 20, 0.92) 88%,
-		var(--cx-bg) 100%);
 	pointer-events: none;
+	background: linear-gradient(180deg,
+		rgba(20, 20, 20, 0.5) 0%,
+		rgba(20, 20, 20, 0.22) 7%,
+		rgba(20, 20, 20, 0) 16%,
+		rgba(20, 20, 20, 0) 34%,
+		rgba(20, 20, 20, 0.03) 40%,
+		rgba(20, 20, 20, 0.08) 46%,
+		rgba(20, 20, 20, 0.15) 52%,
+		rgba(20, 20, 20, 0.24) 57%,
+		rgba(20, 20, 20, 0.35) 62%,
+		rgba(20, 20, 20, 0.47) 67%,
+		rgba(20, 20, 20, 0.59) 72%,
+		rgba(20, 20, 20, 0.7) 77%,
+		rgba(20, 20, 20, 0.8) 82%,
+		rgba(20, 20, 20, 0.88) 87%,
+		rgba(20, 20, 20, 0.94) 91.5%,
+		rgba(20, 20, 20, 0.98) 96%,
+		#141414 100%);
 }
 
-/* with "Backdrops" on, the artwork is the page-wide backdrop instead, which
-   Jellyfin dims to 14%: let it through on the hero */
+/* the app-wide backdrop: let it through on the hero (stock dims it to 14%) */
 .backgroundContainer.withBackdrop {
 	transition: opacity var(--cx-slow) ease;
 }
 
 .layout-desktop body:has(#itemDetailPage:not(.hide) .detailImageContainer .portraitCard) .backgroundContainer.withBackdrop {
-	opacity: 0.18 !important;
+	opacity: 0.12 !important;
+}
+
+/* the page below the hero is solid, so the app-wide backdrop stops there */
+.layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) .detailPageWrapperContainer {
+	background-color: var(--cx-bg) !important;
 }
 
 .layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) .detailImageContainer .portraitCard {
@@ -947,6 +1323,7 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
+	padding: 0 !important;
 }
 
 .layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) .nameContainer {
@@ -956,8 +1333,6 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 
 .layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) .itemName {
 	font-size: clamp(2rem, 3.4vw, 3.4rem) !important;
-	font-weight: 700 !important;
-	letter-spacing: -0.025em;
 	line-height: 1.1;
 	white-space: normal !important;
 	text-shadow: 0 2px 24px rgba(0, 0, 0, 0.55);
@@ -967,7 +1342,6 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 	justify-content: center;
 	gap: 0 0.9rem;
 	margin-top: 0.35rem;
-	color: rgba(230, 230, 230, 0.8);
 	text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
 }
 
@@ -980,39 +1354,26 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 	margin: 1.1rem 0 0 !important;
 }
 
+.layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) .mainDetailButtons > .detailButton:not(.hide) {
+	height: 2.9rem;
+}
+
+.layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) .mainDetailButtons > .detailButton:not(.btnPlay):not(.hide) {
+	width: 2.9rem;
+}
+
 /* with the poster gone the content lines up with the page edge */
 .layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) > .detailPagePrimaryContent {
 	padding-left: 3.3% !important;
 	padding-right: 3.3% !important;
 }
 
-/* Play is a wide accent pill with its label ("Play", "Resume", ...) */
-.layout-desktop .mainDetailButtons > .btnPlay.detailButton:not(.hide) {
-	width: auto;
-	min-width: 8.5rem;
-	height: 2.9rem;
-	margin-right: 0.5rem !important;
-	padding: 0 1.4rem 0 1.05rem !important;
-	gap: 0.35rem;
-	border-radius: 99px !important;
-	font-weight: 600;
+.layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) :is(.overview, .tagline, .itemDetailsGroup, .itemTags, .itemExternalLinks) {
+	max-width: 62rem;
 }
 
-.layout-desktop .mainDetailButtons > .btnPlay.detailButton:not(.hide)::after {
-	content: attr(title);
-	font-size: 0.95rem;
-	letter-spacing: 0.01em;
-}
-
-.layout-desktop .mainDetailButtons > .btnPlay .detailButton-icon {
-	font-size: 1.6rem !important;
-}
-
-.layout-desktop .mainDetailButtons > .detailButton:not(.btnPlay):not(.hide) {
-	width: 2.9rem;
-	height: 2.9rem;
-	-webkit-backdrop-filter: blur(12px);
-	backdrop-filter: blur(12px);
+.layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) .trackSelections {
+	max-width: 44rem;
 }
 
 /* the clear logo stands in for the title, centred above the info */
@@ -1023,7 +1384,7 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 		margin: 0 auto;
 		width: min(44vw, 36rem);
 		height: 19vh;
-		top: calc(var(--cx-hero) - 8.4rem - 19vh);
+		top: calc(var(--cx-hero) - 8.6rem - 19vh);
 		background-position: center bottom;
 		filter: drop-shadow(0 4px 24px rgba(0, 0, 0, 0.45));
 		z-index: 3;
@@ -1034,40 +1395,59 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 	}
 }
 
-/* overview, tagline and the info table below the hero */
-.layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) .detailSection {
-	max-width: 62rem;
-}
-
-.nameContainer .itemName {
-	color: var(--cx-text) !important;
-}
-
-.nameContainer .parentName,
-.nameContainer .parentName a {
-	color: var(--cx-text-dim) !important;
-}
+/* --- below the hero --------------------------------------------------------- */
 
 .tagline {
 	font-weight: 600;
 	letter-spacing: -0.01em;
 }
 
-.overview,
-.detailSectionContent .overview-controls {
+.overview {
 	line-height: 1.6;
 	color: rgba(230, 230, 230, 0.85);
 }
 
+.overview-expand {
+	color: var(--cx-text) !important;
+	border-radius: var(--cx-r-sm) !important;
+}
+
 .trackSelections {
-	padding: 0.35rem 0.6rem !important;
-	border-radius: 0.9rem;
+	padding: 0.4rem 0.7rem !important;
+	border-radius: var(--cx-r-lg);
 	background-color: var(--cx-surface);
 	box-shadow: inset 0 0 0 1px var(--cx-line);
 }
 
+.detailTrackSelect,
+.trackSelections .selectContainer .emby-select {
+	background-color: transparent !important;
+	border-color: transparent !important;
+	box-shadow: none !important;
+}
+
+.trackSelections .selectContainer .emby-select:hover {
+	background-color: var(--cx-hover) !important;
+}
+
 .detailsGroupItem .label {
 	color: var(--cx-text-dim);
+}
+
+.itemGenres a,
+.itemTags a,
+.itemExternalLinks a,
+.detailsGroupItem .content a {
+	color: var(--cx-text) !important;
+	transition: color var(--cx-fast) ease;
+}
+
+.itemGenres a:hover,
+.itemTags a:hover,
+.itemExternalLinks a:hover,
+.detailsGroupItem .content a:hover {
+	color: #fff !important;
+	text-decoration: underline;
 }
 
 /* --- episodes as a grid of 16:9 cards (after ElegantFin) ----------------- */
@@ -1102,13 +1482,14 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 		height: auto !important;
 		aspect-ratio: 16 / 9;
 		margin: 0 !important;
-		border-radius: var(--jf-card-borderRadius);
 		background-size: cover;
-		transition: box-shadow var(--cx-fast) ease;
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+		transition: transform var(--cx-med) var(--cx-ease), box-shadow var(--cx-med) var(--cx-ease);
 	}
 
 	.layout-desktop .listItem-largeImage:hover .listItemImage-large {
-		box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85);
+		transform: translateY(-3px) scale(1.015);
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28), 0 18px 36px -16px rgba(0, 0, 0, 0.75);
 	}
 
 	.layout-desktop .listItem-largeImage .listItemBody {
@@ -1152,25 +1533,25 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 	}
 }
 
-/* the play bubble on episode images */
+/* the play button on episode images: frosted rounded square */
 .listItemImageButton {
-	background-color: rgba(20, 20, 20, 0.35) !important;
-	-webkit-backdrop-filter: blur(14px) saturate(170%);
-	backdrop-filter: blur(14px) saturate(170%);
-	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+	border-radius: var(--cx-r-lg) !important;
+	background-color: var(--cx-glass-btn) !important;
+	-webkit-backdrop-filter: var(--cx-blur-sm);
+	backdrop-filter: var(--cx-blur-sm);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22), 0 8px 20px -8px rgba(0, 0, 0, 0.6);
 	color: #fff !important;
-	border-radius: 50% !important;
 }
 
 .listItemImageButton:hover {
-	background-color: rgba(255, 255, 255, 0.18) !important;
+	background-color: var(--cx-glass-btn-h) !important;
 }
 
-/* with a mouse it only shows on hover */
+/* with a mouse it shows on hover (it fades itself, so the blur is there
+   from the first frame) */
 .layout-desktop .listItemImageButton {
 	opacity: 0;
-	font-size: 0.85em;
-	transition: opacity var(--cx-fast) ease, background-color var(--cx-fast) ease !important;
+	transition: opacity var(--cx-med) ease, background-color var(--cx-fast) ease !important;
 }
 
 .layout-desktop .listItem:hover .listItemImageButton,
@@ -1178,33 +1559,27 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 	opacity: 1;
 }
 
-.listItemImage {
-	border-radius: 0.6rem;
-}
-
-/* settings / preferences menu */
-.readOnlyContent .listItem .listItemIcon,
-.userPreferencesPage .listItemIcon {
-	color: var(--cx-text-dim);
-}
-
 /* ==========================================================================
-   8. Player: segmented smoked-glass controls
+   8. Player: one Apple-style glass panel
    --------------------------------------------------------------------------
-   Seek bar, transport (rewind / play / forward) and the right-hand buttons
-   are separate pills.  Jellyfin hides the controls by fading the whole bar;
-   here the bar stays opaque and each pill fades itself, so the blur never
+   Title, seek bar and buttons sit together on a single frosted panel with
+   rounded corners; buttons are rounded squares and the transport is
+   centred.  Jellyfin hides the controls by fading the whole bottom bar;
+   here the bar stays opaque and the panel fades itself, so the blur never
    switches off mid-fade.  The bar still moves by half a pixel so Jellyfin
    gets the transitionend it waits for before removing it.
+
+   If a browser draws hardware-decoded video on its own layer, nothing on
+   the page can blur it; the panel's tint is dense enough to read as frosted
+   glass either way.
    ========================================================================== */
 
-/* legibility gradients: lighter than stock */
 #videoOsdPage .videoOsdBottom {
-	background: linear-gradient(0deg, rgba(0, 0, 0, 0.4), transparent) !important;
-	padding-top: 4rem;
+	background: linear-gradient(0deg, rgba(0, 0, 0, 0.45), transparent) !important;
+	padding: 5rem 0 max(env(safe-area-inset-bottom), 1.25rem) !important;
 	opacity: 1 !important;
 	transform: translateY(0);
-	transition: transform var(--cx-med) ease, background-color var(--cx-med) ease !important;
+	transition: transform var(--cx-slow) ease, background-color var(--cx-slow) ease !important;
 }
 
 #videoOsdPage .videoOsdBottom.videoOsdBottom-hidden {
@@ -1212,82 +1587,85 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 	background: transparent !important;
 }
 
-.skinHeader-withBackground.osdHeader {
-	background: linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, transparent) !important;
-	transition: opacity var(--cx-slow) ease;
+/* the panel */
+#videoOsdPage .osdControls {
+	flex-grow: 0 !important;
+	width: min(100% - 2.5rem, 68rem);
+	margin: 0 auto;
+	padding: 0.85rem 1rem 0.7rem !important;
+	box-sizing: border-box;
+	border-radius: var(--cx-r-xl);
+	background-color: rgba(30, 30, 32, 0.62);
+	-webkit-backdrop-filter: var(--cx-blur);
+	backdrop-filter: var(--cx-blur);
+	box-shadow: var(--cx-edge), var(--cx-shadow);
+	transition: opacity var(--cx-slow) ease, transform var(--cx-slow) var(--cx-ease) !important;
 }
 
-/* --- hide / show -------------------------------------------------------- */
-
-#videoOsdPage .osdControls > *,
-#videoOsdPage .videoOsdBottom .buttons > * {
-	transition: opacity var(--cx-med) ease, background-color var(--cx-fast) ease !important;
-}
-
-#videoOsdPage .videoOsdBottom-hidden .osdControls > *,
-#videoOsdPage .videoOsdBottom-hidden .buttons > * {
+#videoOsdPage .videoOsdBottom-hidden .osdControls {
 	opacity: 0;
+	transform: translateY(10px);
 	pointer-events: none;
 }
 
-/* the controls row itself never fades (its pills do) */
-#videoOsdPage .videoOsdBottom-hidden .osdControls > .buttons {
-	opacity: 1;
+/* title */
+#videoOsdPage .osdMainTextContainer,
+#videoOsdPage .osdSecondaryMediaInfo {
+	margin: 0 0 0.35rem !important;
+	padding: 0 0.15rem !important;
 }
 
-/* --- layout --------------------------------------------------------------- */
-
-#videoOsdPage .osdControls {
-	padding: 0 1.25rem 0.9rem !important;
-}
-
-#videoOsdPage .osdMainTextContainer .osdTitle {
+#videoOsdPage .osdTitle {
+	margin: 0 !important;
+	font-size: 1rem !important;
 	font-weight: 600;
-	text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+	letter-spacing: -0.01em;
 }
 
-/* seek bar pill */
+/* seek row */
 #videoOsdPage .osdControls > .flex:has(> .sliderContainer),
 #videoOsdPage .osdControls > .flex.flex-direction-row {
-	height: 2.6rem;
-	margin: 0 0 0.6rem;
-	padding: 0 0.9rem;
-	gap: 0.6rem;
-	border-radius: 99px;
-	background-color: var(--cx-pill);
-	-webkit-backdrop-filter: var(--cx-pill-blur);
-	backdrop-filter: var(--cx-pill-blur);
-	box-shadow: inset 0 0 0 1px var(--cx-pill-line);
+	gap: 0.75rem;
+	margin: 0;
+	padding: 0 0.15rem;
 }
 
 #videoOsdPage .osdPositionText,
 #videoOsdPage .osdDurationText {
 	margin: 0 !important;
 	padding: 0 !important;
-	font-size: 0.95rem;
+	min-width: 3.2em;
+	font-size: 0.8rem;
 	font-weight: 500;
-	opacity: 0.8;
+	opacity: 0.7;
 	font-variant-numeric: tabular-nums;
 }
 
-/* buttons row */
+#videoOsdPage .osdDurationText {
+	justify-content: flex-end;
+}
+
+/* buttons row: transport in the middle, the rest at the sides */
 #videoOsdPage .videoOsdBottom .buttons {
-	padding: 0 !important;
-	gap: 0;
+	position: relative;
+	padding: 0.35rem 0 0 !important;
+	gap: 0.15rem;
 	align-items: center;
+	min-height: 3rem;
 }
 
 #videoOsdPage .videoOsdBottom .buttons .paper-icon-button-light {
-	width: calc(var(--cx-pill-h) - 0.5rem);
-	height: calc(var(--cx-pill-h) - 0.5rem);
-	margin: 0.25rem !important;
+	width: 2.6rem;
+	height: 2.6rem;
+	margin: 0 !important;
 	padding: 0 !important;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	border-radius: 50% !important;
-	color: #fff !important;
+	border-radius: var(--cx-r-md) !important;
+	color: rgba(255, 255, 255, 0.92) !important;
 	background-color: transparent;
+	transition: background-color var(--cx-fast) ease, transform var(--cx-fast) ease;
 }
 
 #videoOsdPage .videoOsdBottom .buttons .paper-icon-button-light.hide {
@@ -1295,113 +1673,74 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 }
 
 #videoOsdPage .videoOsdBottom .buttons .paper-icon-button-light .material-icons {
-	font-size: 1.6rem !important;
+	font-size: 1.45rem !important;
 }
 
 #videoOsdPage .videoOsdBottom .buttons .paper-icon-button-light:hover:not(:disabled) {
-	background-color: rgba(255, 255, 255, 0.10) !important;
+	background-color: rgba(255, 255, 255, 0.12) !important;
 	color: #fff !important;
 }
 
-/* favourite heart keeps its red when set */
-#videoOsdPage .videoOsdBottom .btnUserRating .material-icons.ratingbutton-icon-withrating,
-#videoOsdPage .videoOsdBottom .btnUserRating[data-isfavorite="true"] .material-icons {
-	color: #e5534b;
+#videoOsdPage .videoOsdBottom .buttons .paper-icon-button-light:active:not(:disabled) {
+	transform: scale(0.94);
 }
 
-/* left pill: rewind / play / forward */
 #videoOsdPage .videoOsdBottom .buttons > div[dir] {
 	display: flex;
 	align-items: center;
-	height: var(--cx-pill-h);
-	border-radius: 99px;
-	background-color: var(--cx-pill);
-	-webkit-backdrop-filter: var(--cx-pill-blur);
-	backdrop-filter: var(--cx-pill-blur);
-	box-shadow: inset 0 0 0 1px var(--cx-pill-line);
+	gap: 0.35rem;
+}
+
+#videoOsdPage .videoOsdBottom .btnPause {
+	width: 3rem !important;
+	height: 3rem !important;
+}
+
+#videoOsdPage .videoOsdBottom .btnPause .material-icons {
+	font-size: 2rem !important;
+}
+
+@media (min-width: 56em) {
+	#videoOsdPage .videoOsdBottom .buttons > div[dir] {
+		position: absolute;
+		left: 50%;
+		top: calc(50% + 0.175rem);
+		transform: translate(-50%, -50%);
+	}
 }
 
 #videoOsdPage .osdTimeText {
-	margin-left: 1rem !important;
-	font-size: 0.9rem;
-	opacity: 0.8;
-	text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+	margin-left: 0.4rem !important;
+	font-size: 0.8rem;
+	opacity: 0.7;
 }
 
-/* right pill: everything after the time text, drawn as touching segments
-   (rounded only at the two ends) so it reads as one shape */
-#videoOsdPage .videoOsdBottom .buttons > .osdTimeText ~ :not(.hide) {
-	height: var(--cx-pill-h);
-	margin: 0 !important;
-	padding: 0 0.1rem !important;
-	border-radius: 0 !important;
-	background-color: var(--cx-pill) !important;
-	-webkit-backdrop-filter: var(--cx-pill-blur);
-	backdrop-filter: var(--cx-pill-blur);
-	box-shadow: inset 0 1px 0 var(--cx-pill-line), inset 0 -1px 0 var(--cx-pill-line);
-	display: inline-flex;
+#videoOsdPage .videoOsdBottom .btnUserRating .material-icons.ratingbutton-icon-withrating {
+	color: #ff6b81;
+}
+
+/* volume */
+#videoOsdPage .videoOsdBottom .volumeButtons {
 	align-items: center;
-	justify-content: center;
-	width: auto;
-}
-
-#videoOsdPage .videoOsdBottom .buttons > .osdTimeText ~ :not(.hide) > * {
-	flex: none;
-}
-
-#videoOsdPage .videoOsdBottom .buttons > .osdTimeText ~ :not(.hide):not(.osdTimeText ~ :not(.hide) ~ *) {
-	border-radius: 99px 0 0 99px !important;
-	padding-left: 0.15rem !important;
-	box-shadow: inset 1px 0 0 var(--cx-pill-line), inset 0 1px 0 var(--cx-pill-line), inset 0 -1px 0 var(--cx-pill-line);
-}
-
-#videoOsdPage .videoOsdBottom .buttons > :not(.hide):last-child,
-#videoOsdPage .videoOsdBottom .buttons > .btnFullscreen {
-	border-radius: 0 99px 99px 0 !important;
-	padding-right: 0.15rem !important;
-	box-shadow: inset -1px 0 0 var(--cx-pill-line), inset 0 1px 0 var(--cx-pill-line), inset 0 -1px 0 var(--cx-pill-line) !important;
-}
-
-/* segments that are buttons get their hover bubble from an inner circle */
-#videoOsdPage .videoOsdBottom .buttons > .osdTimeText ~ .paper-icon-button-light:not(.hide) {
-	width: calc(var(--cx-pill-h) - 0.3rem);
-	background-clip: border-box;
-}
-
-#videoOsdPage .videoOsdBottom .buttons > .osdTimeText ~ .paper-icon-button-light:not(.hide):hover:not(:disabled) {
-	background-color: var(--cx-pill) !important;
-	background-image: radial-gradient(circle closest-side, rgba(255, 255, 255, 0.10) calc(100% - 0.25rem), transparent calc(100% - 0.2rem)) !important;
-}
-
-/* volume inside the right pill */
-#videoOsdPage .videoOsdBottom .volumeButtons .paper-icon-button-light {
-	width: calc(var(--cx-pill-h) - 0.5rem) !important;
 }
 
 #videoOsdPage .videoOsdBottom .osdVolumeSliderContainer {
-	width: 7rem !important;
-	margin: 0 0.9rem 0 0.25rem !important;
+	width: 6.5rem !important;
+	margin: 0 0.6rem 0 0.2rem !important;
 }
 
-/* --- seek + volume sliders ---------------------------------------------- */
-
+/* sliders: white fill, the player stays neutral */
 #videoOsdPage .mdl-slider-background-upper {
-	background-color: rgba(255, 255, 255, 0.18) !important;
+	background-color: rgba(255, 255, 255, 0.22) !important;
 }
 
-#videoOsdPage .osdVolumeSliderContainer .mdl-slider-background-lower {
+#videoOsdPage .mdl-slider-background-lower {
 	background-color: #f2f2f2 !important;
 }
 
-/* the seek fill is white too: the player stays neutral glass */
-#videoOsdPage .osdPositionSlider ~ .mdl-slider-background-flex-container .mdl-slider-background-lower,
-#videoOsdPage .sliderContainer:not(.osdVolumeSliderContainer) .mdl-slider-background-lower {
-	background-color: #f2f2f2 !important;
-}
-
-#videoOsdPage .mdl-slider-background-flex {
-	border-radius: 99px;
-	overflow: hidden;
+#videoOsdPage .osdControls .mdl-slider-background-flex {
+	height: 5px !important;
+	margin-top: -2.5px !important;
 }
 
 #videoOsdPage .sliderMarker {
@@ -1410,94 +1749,136 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 
 /* chapter preview above the seek bar */
 #videoOsdPage .chapterThumbContainer {
-	border-radius: 0.8rem !important;
+	border-radius: var(--cx-r-lg) !important;
 	overflow: hidden;
-	box-shadow: var(--cx-shadow), 0 0 0 1px var(--cx-pill-line);
+	box-shadow: var(--cx-edge), var(--cx-shadow);
 }
 
 #videoOsdPage .chapterThumbTextContainer {
-	background: var(--cx-glass) !important;
+	background: var(--cx-mat-thick) !important;
 	-webkit-backdrop-filter: var(--cx-blur);
 	backdrop-filter: var(--cx-blur);
 }
 
-/* --- top bar: glass back button ----------------------------------------- */
+/* Firefox (and Zen, LibreWolf, ...) composites video on its own layer and
+   never runs backdrop-filter over it, so glass in the player would just be
+   a thin tint over a sharp picture.  There the player's surfaces get a
+   denser "thick material" instead, with a soft sheen, so they still read as
+   frosted glass.  Everything else in Firefox does get real blur. */
+@supports selector(:-moz-focusring) {
+	#videoOsdPage .osdControls {
+		background-color: rgba(26, 26, 28, 0.82);
+		background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 40%);
+	}
+
+	.osdHeader .headerButton,
+	.skip-button,
+	.skipIntro .emby-button,
+	.upNextDialog,
+	.playerStats {
+		background-color: rgba(26, 26, 28, 0.82) !important;
+	}
+
+	#videoOsdPage .videoOsdBottom:not(.videoOsdBottom-hidden) {
+		background: linear-gradient(0deg, rgba(0, 0, 0, 0.55), transparent) !important;
+	}
+}
+
+/* --- top bar: frosted back button ----------------------------------------- */
+
+.skinHeader-withBackground.osdHeader {
+	background: linear-gradient(180deg, rgba(0, 0, 0, 0.42) 0%, transparent) !important;
+	-webkit-backdrop-filter: none !important;
+	backdrop-filter: none !important;
+}
+
+.osdHeader .headerTop {
+	padding: 1rem 1.25rem 0 !important;
+}
+
+.osdHeader .headerLeft,
+.osdHeader .headerRight {
+	gap: 0.4rem;
+}
 
 .osdHeader .headerButton {
-	width: var(--cx-pill-h) !important;
-	height: var(--cx-pill-h) !important;
-	border-radius: 50% !important;
+	width: 2.75rem !important;
+	height: 2.75rem !important;
+	margin: 0 !important;
+	border-radius: var(--cx-r-md) !important;
 	color: #fff !important;
-	background-color: var(--cx-pill) !important;
-	-webkit-backdrop-filter: var(--cx-pill-blur);
-	backdrop-filter: var(--cx-pill-blur);
-	box-shadow: inset 0 0 0 1px var(--cx-pill-line);
+	background-color: rgba(30, 30, 32, 0.55) !important;
+	-webkit-backdrop-filter: var(--cx-blur);
+	backdrop-filter: var(--cx-blur);
+	box-shadow: var(--cx-edge);
 	transition: background-color var(--cx-fast) ease;
 }
 
 .osdHeader .headerButton:hover {
-	background-color: rgba(40, 40, 40, 0.6) !important;
+	background-color: rgba(60, 60, 64, 0.6) !important;
 }
 
-.osdHeader .headerTop {
-	padding: 0.75rem 1rem 0 !important;
-	gap: 0.4rem;
-}
-
-.osdHeader .headerRight,
-.osdHeader .headerLeft {
-	gap: 0.4rem;
-}
-
-/* --- popups --------------------------------------------------------------- */
+/* --- popups in the player --------------------------------------------------- */
 
 /* "up next" */
 .upNextDialog {
-	background-color: var(--cx-glass) !important;
+	background-color: var(--cx-mat) !important;
 	-webkit-backdrop-filter: var(--cx-blur);
 	backdrop-filter: var(--cx-blur);
-	border: 1px solid var(--cx-pill-line);
-	border-radius: 1.1rem !important;
-	box-shadow: var(--cx-shadow);
+	border: 0 !important;
+	border-radius: var(--cx-r-xl) !important;
+	box-shadow: var(--cx-edge), var(--cx-shadow);
 	overflow: hidden;
 }
 
 .upNextDialog-countdownText {
-	color: var(--cx-accent) !important;
+	color: #fff !important;
+	font-weight: 600;
+}
+
+.upNextDialog .raised,
+.upNextDialog .button-flat {
+	border-radius: var(--cx-r-md) !important;
 }
 
 /* skip intro / outro */
 .skip-button,
 .skipIntro .emby-button {
-	background-color: var(--cx-pill) !important;
-	-webkit-backdrop-filter: var(--cx-pill-blur);
-	backdrop-filter: var(--cx-pill-blur);
-	box-shadow: inset 0 0 0 1px var(--cx-pill-line) !important;
-	border: 0 !important;
-	border-radius: 99px !important;
-	color: #fff !important;
-}
-
-/* small text pills (playback info, osd messages) */
-.playerStats {
-	background-color: var(--cx-glass) !important;
+	background-color: rgba(30, 30, 32, 0.6) !important;
 	-webkit-backdrop-filter: var(--cx-blur);
 	backdrop-filter: var(--cx-blur);
-	border: 1px solid var(--cx-pill-line);
-	border-radius: 1.1rem !important;
+	box-shadow: var(--cx-edge) !important;
+	border: 0 !important;
+	border-radius: var(--cx-r-md) !important;
+	color: #fff !important;
+	font-weight: 600;
+}
+
+/* playback info */
+.playerStats {
+	background-color: var(--cx-mat) !important;
+	-webkit-backdrop-filter: var(--cx-blur);
+	backdrop-filter: var(--cx-blur);
+	border: 0 !important;
+	border-radius: var(--cx-r-lg) !important;
+	box-shadow: var(--cx-edge), var(--cx-shadow);
 }
 
 /* --- now-playing bar (music) -------------------------------------------- */
 
 .nowPlayingBar {
-	background-color: var(--cx-glass) !important;
+	background-color: var(--cx-mat-thick) !important;
 	-webkit-backdrop-filter: var(--cx-blur);
 	backdrop-filter: var(--cx-blur);
-	border-top: 1px solid var(--cx-line);
+	box-shadow: inset 0 1px 0 var(--cx-line) !important;
 }
 
-.nowPlayingBarPositionContainer .mdl-slider-background-lower {
-	background-color: var(--cx-accent) !important;
+.nowPlayingBar .mdl-slider-background-lower {
+	background-color: #f2f2f2 !important;
+}
+
+.nowPlayingImage {
+	border-radius: var(--cx-r-sm);
 }
 
 /* ==========================================================================
@@ -1509,5 +1890,10 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 		animation-duration: 1ms !important;
 		animation-iteration-count: 1 !important;
 		transition-duration: 1ms !important;
+	}
+
+	.layout-desktop .card-hoverable:is(:hover, :focus-within) .cardScalable,
+	.layout-desktop .listItem-largeImage:hover .listItemImage-large {
+		transform: none;
 	}
 }
