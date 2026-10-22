@@ -3,9 +3,9 @@
 /*
  * @name        Cursor Dark
  * @author      T3lluz
- * @version     2.2.0
+ * @version     2.3.0
  * @description Neutral dark gray in the style of Cursor's editor theme with a purple accent, and Apple-style frosted glass on everything that floats. Port of the Stremio theme of the same name.
- * @swatches    #181818 #0d0d0e #232323 #7b5bf5 #e6e6e6
+ * @swatches    #202020 #0f0f10 #2d2d2d #7b5bf5 #e6e6e6
  *
  * Install: Dashboard -> General -> Custom CSS code (server-wide), or
  * Settings -> Display -> Custom CSS (just you), and paste
@@ -35,10 +35,10 @@
 
 :root,
 :root[data-theme] {
-	--cx-bg:          #181818;   /* the inner sheet: a step lighter than the frame */
-	--cx-surface:     #1f1f1f;
-	--cx-surface-2:   #262626;
-	--cx-raised:      #2c2c2c;
+	--cx-bg:          #202020;   /* the inner sheet: clearly lighter than the frame */
+	--cx-surface:     #272727;
+	--cx-surface-2:   #2d2d2d;
+	--cx-raised:      #333333;
 	--cx-chrome:      #0d0d0e;   /* the frame's colour where there is no glass */
 	--cx-text:        #e6e6e6;
 	--cx-text-dim:    #9a9a9a;
@@ -108,10 +108,10 @@
 	--jf-palette-secondary-contrastTextChannel: 255 255 255;
 
 	--jf-palette-background-default:           var(--cx-bg);
-	--jf-palette-background-defaultChannel:    24 24 24;
+	--jf-palette-background-defaultChannel:    32 32 32;
 	--jf-palette-background-defaultImage:      none;
 	--jf-palette-background-paper:             var(--cx-surface);
-	--jf-palette-background-paperChannel:      31 31 31;
+	--jf-palette-background-paperChannel:      39 39 39;
 
 	--jf-palette-AppBar-defaultBg:             var(--cx-mat-header);
 	--jf-palette-AppBar-darkBg:                var(--cx-mat-header);
@@ -156,7 +156,7 @@
 	--jf-palette-SnackbarContent-color:        var(--cx-text);
 	--jf-palette-Avatar-defaultBg:             var(--cx-raised);
 	--jf-palette-Button-inheritContainedBg:    var(--cx-raised);
-	--jf-palette-Button-inheritContainedHoverBg: #333;
+	--jf-palette-Button-inheritContainedHoverBg: #3a3a3a;
 
 	--jf-card-borderRadius:                    12px;
 
@@ -188,6 +188,22 @@ body {
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 	font-feature-settings: "cv11", "ss01";
+}
+
+/* Jellyfin 10.10 and 10.11 hard-code their own page colour (#101010) and
+   dim backdrops with black instead of reading the palette tokens above.
+   Pin both to the inner sheet colour, or the hero fades into one grey and
+   the page under it is another. */
+html,
+.backgroundContainer,
+.noBackdropTransparency .detailPagePrimaryContainer,
+.noBackdropTransparency .detailPageSecondaryContainer {
+	background-color: var(--cx-bg) !important;
+}
+
+.backgroundContainer.withBackdrop {
+	background-color: var(--cx-bg) !important;
+	opacity: 0.86;
 }
 
 h1, h2, h3,
@@ -530,8 +546,15 @@ html {
 	border-radius: var(--cx-r-md) !important;
 }
 
-.paper-icon-button-light:hover:not(:disabled) {
+.paper-icon-button-light:hover:not(:disabled),
+.paper-icon-button-light:active:not(:disabled) {
 	background-color: var(--cx-hover) !important;
+	color: #fff !important;
+}
+
+/* multi-select bar (stock: blue in older versions) */
+.selectionCommandsPanel {
+	background: var(--cx-accent) !important;
 	color: #fff !important;
 }
 
@@ -749,111 +772,74 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 
 /* --- frame ----------------------------------------------------------------
    Like the Stremio theme: the content sits on a lighter, rounded inner
-   sheet, and a slim frame runs round it.  The frame is the same frosted
-   glass as the header, on all four sides, so rows scrolled under its edges
-   blur instead of being cut off, and it reads as one piece with the header.
+   sheet, and a slim frame runs round it.  The frame and the header are one
+   single pane of frosted glass: the header's own glass layer (::before)
+   reaches down to the bottom of the window, and a mask cuts the sheet out
+   of it.  Being one layer, the glass is continuous all the way round, with
+   no join where the header meets the sides, and rows scrolled under any
+   edge blur the same way they do under the header.
 
-   Each piece is its own small glass layer, because a blur costs what it
-   covers:
-     - the side strips (body::before, body::after) run the full height,
-       behind the ends of the header, whose own glass stops at the strips
-     - the top corners hang off the header (header::after, top: 100%), so
-       they follow the header's height, whatever it is on that page
-     - the bottom band with the lower corners (html::before)
-   Corners are cut with masks (mask-composite), which every engine with
-   backdrop-filter supports.  Left out on details pages, in the player, on
-   login and in the dashboard; browsers without :has() skip it. */
+   The layer starts at the top of the header and is the header's height
+   plus one window tall, so inside it the header's bottom edge sits at
+   100% - 100vh and the window's bottom edge at 100vh, whatever height the
+   header has on that page.  The sheet is a rounded rectangle between those
+   edges, built from two rectangles and four circles.  A ring one pixel
+   larger is painted underneath as the sheet's hairline edge.
 
-:root {
-	--cx-frame-z: 998;   /* just under the classic header (999) */
-}
-
-:root:has(.MuiAppBar-root) {
-	--cx-frame-z: 1099;   /* just under the experimental header (1100) */
-}
+   Left out on details pages, in the player, on login and in the
+   dashboard; browsers without :has() skip it. */
 
 @media (min-width: 641px) {
-	/* the header's glass stops where the side strips take over */
 	body:not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .type-interior:not(.hide), .MuiDrawer-docked)):not(:has(.MuiAppBar-root)) .skinHeader:not(.semiTransparent):not(.osdHeader):not(.hide)::before,
 	body:not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .type-interior:not(.hide), .MuiDrawer-docked)) .MuiAppBar-root::before {
-		left: var(--cx-frame-gap);
-		right: var(--cx-frame-gap);
-	}
-
-	/* top corners: a band the height of the radius, minus the sheet's
-	   rounded top (a centre strip plus a circle at each corner) */
-	body:not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .type-interior:not(.hide), .MuiDrawer-docked)):not(:has(.MuiAppBar-root)) .skinHeader:not(.semiTransparent):not(.osdHeader):not(.hide)::after,
-	body:not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .type-interior:not(.hide), .MuiDrawer-docked)) .MuiAppBar-root::after {
-		content: "";
-		position: absolute;
-		top: 100%;
-		left: var(--cx-frame-gap);
-		right: var(--cx-frame-gap);
-		height: var(--cx-frame-radius);
-		pointer-events: none;
-		background-color: var(--cx-mat-frame);
-		-webkit-backdrop-filter: var(--cx-blur);
-		backdrop-filter: var(--cx-blur);
+		--g: var(--cx-frame-gap);
 		--r: var(--cx-frame-radius);
-		--cx-corner: radial-gradient(circle closest-side, #000 calc(100% - 1px), transparent);
-		-webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0), var(--cx-corner), var(--cx-corner);
-		mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0), var(--cx-corner), var(--cx-corner);
-		-webkit-mask-position: 0 0, var(--r) 0, 0 0, 100% 0;
-		mask-position: 0 0, var(--r) 0, 0 0, 100% 0;
-		-webkit-mask-size: 100% 100%, calc(100% - 2 * var(--r)) 100%, calc(2 * var(--r)) calc(2 * var(--r)), calc(2 * var(--r)) calc(2 * var(--r));
-		mask-size: 100% 100%, calc(100% - 2 * var(--r)) 100%, calc(2 * var(--r)) calc(2 * var(--r)), calc(2 * var(--r)) calc(2 * var(--r));
+		--top: calc(100% - 100vh);           /* header's bottom edge */
+		--bottom: calc(100vh - var(--g));    /* sheet's bottom edge */
+		--hole-x: linear-gradient(180deg, transparent var(--top), #000 var(--top), #000 var(--bottom), transparent var(--bottom));
+		--hole-y: linear-gradient(180deg, transparent calc(var(--top) + var(--r)), #000 calc(var(--top) + var(--r)), #000 calc(var(--bottom) - var(--r)), transparent calc(var(--bottom) - var(--r)));
+		--ring-x: linear-gradient(180deg, transparent calc(var(--top) - 1px), var(--cx-line-strong) calc(var(--top) - 1px), var(--cx-line-strong) calc(var(--bottom) + 1px), transparent calc(var(--bottom) + 1px));
+		--ring-y: linear-gradient(180deg, transparent calc(var(--top) + var(--r)), var(--cx-line-strong) calc(var(--top) + var(--r)), var(--cx-line-strong) calc(var(--bottom) - var(--r)), transparent calc(var(--bottom) - var(--r)));
+		--tl: calc(var(--g) + var(--r)) calc(var(--top) + var(--r));
+		--tr: calc(100% - var(--g) - var(--r)) calc(var(--top) + var(--r));
+		--bl: calc(var(--g) + var(--r)) calc(var(--bottom) - var(--r));
+		--br: calc(100% - var(--g) - var(--r)) calc(var(--bottom) - var(--r));
+
+		bottom: auto;
+		height: calc(100% + 100vh);
+
+		background-image:
+			var(--ring-x), var(--ring-y),
+			radial-gradient(circle at var(--tl), var(--cx-line-strong) calc(var(--r) + 0.5px), transparent calc(var(--r) + 1.5px)),
+			radial-gradient(circle at var(--tr), var(--cx-line-strong) calc(var(--r) + 0.5px), transparent calc(var(--r) + 1.5px)),
+			radial-gradient(circle at var(--bl), var(--cx-line-strong) calc(var(--r) + 0.5px), transparent calc(var(--r) + 1.5px)),
+			radial-gradient(circle at var(--br), var(--cx-line-strong) calc(var(--r) + 0.5px), transparent calc(var(--r) + 1.5px));
+		background-position: calc(var(--g) + var(--r)) 0, calc(var(--g) - 1px) 0, 0 0, 0 0, 0 0, 0 0;
+		background-size: calc(100% - 2 * (var(--g) + var(--r))) 100%, calc(100% - 2 * var(--g) + 2px) 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+		background-repeat: no-repeat;
+
+		-webkit-mask-image:
+			linear-gradient(#000 0 0),
+			var(--hole-x), var(--hole-y),
+			radial-gradient(circle at var(--tl), #000 calc(var(--r) - 0.5px), transparent calc(var(--r) + 0.5px)),
+			radial-gradient(circle at var(--tr), #000 calc(var(--r) - 0.5px), transparent calc(var(--r) + 0.5px)),
+			radial-gradient(circle at var(--bl), #000 calc(var(--r) - 0.5px), transparent calc(var(--r) + 0.5px)),
+			radial-gradient(circle at var(--br), #000 calc(var(--r) - 0.5px), transparent calc(var(--r) + 0.5px));
+		mask-image:
+			linear-gradient(#000 0 0),
+			var(--hole-x), var(--hole-y),
+			radial-gradient(circle at var(--tl), #000 calc(var(--r) - 0.5px), transparent calc(var(--r) + 0.5px)),
+			radial-gradient(circle at var(--tr), #000 calc(var(--r) - 0.5px), transparent calc(var(--r) + 0.5px)),
+			radial-gradient(circle at var(--bl), #000 calc(var(--r) - 0.5px), transparent calc(var(--r) + 0.5px)),
+			radial-gradient(circle at var(--br), #000 calc(var(--r) - 0.5px), transparent calc(var(--r) + 0.5px));
+		-webkit-mask-position: 0 0, calc(var(--g) + var(--r)) 0, var(--g) 0, 0 0, 0 0, 0 0, 0 0;
+		mask-position: 0 0, calc(var(--g) + var(--r)) 0, var(--g) 0, 0 0, 0 0, 0 0, 0 0;
+		-webkit-mask-size: 100% 100%, calc(100% - 2 * (var(--g) + var(--r))) 100%, calc(100% - 2 * var(--g)) 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+		mask-size: 100% 100%, calc(100% - 2 * (var(--g) + var(--r))) 100%, calc(100% - 2 * var(--g)) 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
 		-webkit-mask-repeat: no-repeat;
 		mask-repeat: no-repeat;
-		-webkit-mask-composite: source-out, source-over, source-over, source-over;
-		mask-composite: subtract, add, add, add;
-	}
-
-	/* side strips */
-	body:not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .type-interior:not(.hide), .MuiDrawer-docked)):has(.skinHeader:not(.semiTransparent):not(.osdHeader):not(.hide), .MuiAppBar-root)::before,
-	body:not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .type-interior:not(.hide), .MuiDrawer-docked)):has(.skinHeader:not(.semiTransparent):not(.osdHeader):not(.hide), .MuiAppBar-root)::after {
-		content: "";
-		position: fixed;
-		top: 0;
-		bottom: 0;
-		left: 0;
-		width: var(--cx-frame-gap);
-		z-index: var(--cx-frame-z);
-		pointer-events: none;
-		background-color: var(--cx-mat-frame);
-		-webkit-backdrop-filter: var(--cx-blur);
-		backdrop-filter: var(--cx-blur);
-	}
-
-	body:not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .type-interior:not(.hide), .MuiDrawer-docked)):has(.skinHeader:not(.semiTransparent):not(.osdHeader):not(.hide), .MuiAppBar-root)::after {
-		left: auto;
-		right: 0;
-	}
-
-	/* bottom band, between the strips, minus the sheet's rounded foot */
-	html:not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .type-interior:not(.hide), .MuiDrawer-docked)):has(.skinHeader:not(.semiTransparent):not(.osdHeader):not(.hide), .MuiAppBar-root)::before {
-		content: "";
-		position: fixed;
-		left: var(--cx-frame-gap);
-		right: var(--cx-frame-gap);
-		bottom: 0;
-		height: calc(var(--cx-frame-gap) + var(--cx-frame-radius));
-		z-index: var(--cx-frame-z);
-		pointer-events: none;
-		background-color: var(--cx-mat-frame);
-		-webkit-backdrop-filter: var(--cx-blur);
-		backdrop-filter: var(--cx-blur);
-		--r: var(--cx-frame-radius);
-		--cx-corner: radial-gradient(circle closest-side, #000 calc(100% - 1px), transparent);
-		-webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0), var(--cx-corner), var(--cx-corner);
-		mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0), var(--cx-corner), var(--cx-corner);
-		-webkit-mask-position: 0 0, var(--r) 0, 0 calc(-1 * var(--r)), right 0 top calc(-1 * var(--r));
-		mask-position: 0 0, var(--r) 0, 0 calc(-1 * var(--r)), right 0 top calc(-1 * var(--r));
-		-webkit-mask-size: 100% 100%, calc(100% - 2 * var(--r)) var(--r), calc(2 * var(--r)) calc(2 * var(--r)), calc(2 * var(--r)) calc(2 * var(--r));
-		mask-size: 100% 100%, calc(100% - 2 * var(--r)) var(--r), calc(2 * var(--r)) calc(2 * var(--r)), calc(2 * var(--r)) calc(2 * var(--r));
-		-webkit-mask-repeat: no-repeat;
-		mask-repeat: no-repeat;
-		-webkit-mask-composite: source-out, source-over, source-over, source-over;
-		mask-composite: subtract, add, add, add;
+		-webkit-mask-composite: source-out, source-over, source-over, source-over, source-over, source-over, source-over;
+		mask-composite: subtract, add, add, add, add, add, add;
 	}
 }
 
@@ -1013,14 +999,16 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	transition: opacity var(--cx-med) ease;
 }
 
-.cardOverlayContainer > *,
+/* only the buttons fade, never a wrapper round them: a fading wrapper
+   would switch their blur off until the fade ends */
+.cardOverlayContainer > :not(:has(.cardOverlayButton-hover)),
 .cardOverlayContainer .cardOverlayButton-hover {
 	opacity: 0;
 	transition: opacity var(--cx-med) ease, background-color var(--cx-fast) ease, transform var(--cx-med) var(--cx-ease) !important;
 }
 
 .card-hoverable:is(:hover, :focus-within) .cardOverlayContainer::before,
-.card-hoverable:is(:hover, :focus-within) .cardOverlayContainer > *,
+.card-hoverable:is(:hover, :focus-within) .cardOverlayContainer > :not(:has(.cardOverlayButton-hover)),
 .card-hoverable:is(:hover, :focus-within) .cardOverlayContainer .cardOverlayButton-hover {
 	opacity: 1;
 }
@@ -1200,7 +1188,7 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
    frosted.  Hairlines are inset shadows, as real borders push the ribbon
    off the floated poster. */
 .detailRibbon {
-	background: rgba(24, 24, 24, 0.55) !important;   /* --cx-bg, so it meets the page flush */
+	background: rgba(32, 32, 32, 0.55) !important;   /* --cx-bg, so it meets the page flush */
 	-webkit-backdrop-filter: var(--cx-blur);
 	backdrop-filter: var(--cx-blur);
 	box-shadow: inset 0 1px 0 var(--cx-line), inset 0 -1px 0 var(--cx-line);
@@ -1730,16 +1718,34 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	transform: translateY(0.5px);
 }
 
-/* the panel */
+/* the panel.  Its glass is a ::before layer, not the panel itself: an
+   element with backdrop-filter is the backdrop root of everything inside
+   it, so the seek preview (which hangs off the seek bar, inside the panel)
+   could only blur the panel's own contents and showed the video sharp.
+   For the same reason the panel never fades as a whole: its glass and its
+   rows fade on their own, so nothing inside is ever under a translucent
+   parent. */
 #videoOsdPage .osdControls {
+	position: relative;
+	z-index: 0;
 	flex-grow: 0 !important;
 	width: min(100% - 2.5rem, 64rem);
 	margin: 0 auto;
 	padding: 0.9rem 1.1rem 0.6rem !important;
 	box-sizing: border-box;
 	border-radius: 22px;
+	background: none !important;
+	transition: transform var(--cx-slow) var(--cx-ease) !important;
+}
+
+#videoOsdPage .osdControls::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	border-radius: inherit;
+	pointer-events: none;
 	background-color: var(--cx-mat-player);
-	background-image: none !important;
 	-webkit-backdrop-filter: var(--cx-blur-player);
 	backdrop-filter: var(--cx-blur-player);
 	box-shadow:
@@ -1747,27 +1753,39 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 		inset 0 1px 0 rgba(255, 255, 255, 0.08),
 		0 30px 60px -20px rgba(0, 0, 0, 0.55),
 		0 2px 12px rgba(0, 0, 0, 0.2);
-	transition: opacity var(--cx-slow) ease, transform var(--cx-slow) var(--cx-ease) !important;
+}
+
+#videoOsdPage .osdControls::before,
+#videoOsdPage .osdControls > * {
+	transition: opacity var(--cx-slow) ease;
 }
 
 #videoOsdPage .videoOsdBottom-hidden .osdControls {
-	opacity: 0;
 	transform: translateY(12px) scale(0.985);
 	pointer-events: none;
+}
+
+#videoOsdPage .videoOsdBottom-hidden .osdControls::before,
+#videoOsdPage .videoOsdBottom-hidden .osdControls > * {
+	opacity: 0;
 }
 
 /* Jellyfin shows the bar from display: none, which skips the transition;
    start the panel from its hidden state so it still glides in */
 @starting-style {
 	#videoOsdPage .osdControls {
-		opacity: 0;
 		transform: translateY(12px) scale(0.985);
+	}
+
+	#videoOsdPage .osdControls::before,
+	#videoOsdPage .osdControls > * {
+		opacity: 0;
 	}
 }
 
 /* no glass at all (old browsers): a solid dark panel instead */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-	#videoOsdPage .osdControls {
+	#videoOsdPage .osdControls::before {
 		background-color: rgba(20, 20, 22, 0.92);
 	}
 }
@@ -1997,17 +2015,75 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	background-color: rgba(255, 255, 255, 0.55) !important;
 }
 
-/* chapter preview above the seek bar */
-#videoOsdPage .chapterThumbContainer {
-	border-radius: var(--cx-r-lg) !important;
+/* the preview over the seek bar: one glass card with one edge.  With a
+   trickplay or chapter picture, the picture fills the top of the card and
+   the time sits under it on the same glass; stock nests a shadowed picture
+   box and a second text strip inside the bubble. */
+#videoOsdPage .sliderBubble {
+	background-color: rgba(30, 30, 33, 0.72) !important;   /* small, so a denser tint */
+	-webkit-backdrop-filter: blur(24px) saturate(110%) brightness(0.8);   /* a 60px blur fails on a box this small */
+	backdrop-filter: blur(24px) saturate(110%) brightness(0.8);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 16px 40px -16px rgba(0, 0, 0, 0.6) !important;
+}
+
+#videoOsdPage .sliderBubble:has(.chapterThumbContainer) {
+	padding: 0 !important;
 	overflow: hidden;
-	box-shadow: var(--cx-edge), var(--cx-shadow);
+	border-radius: var(--cx-r-lg) !important;
+}
+
+#videoOsdPage .sliderBubbleText {
+	font-size: 0.85rem;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
+#videoOsdPage .chapterThumbContainer {
+	display: flex;
+	flex-direction: column;
+	border-radius: 0 !important;
+	background: none !important;
+	box-shadow: none !important;
+}
+
+#videoOsdPage .chapterThumbWrapper,
+#videoOsdPage .chapterThumb {
+	display: block;
+	border-radius: 0 !important;
 }
 
 #videoOsdPage .chapterThumbTextContainer {
-	background: var(--cx-mat-thick) !important;
-	-webkit-backdrop-filter: var(--cx-blur);
-	backdrop-filter: var(--cx-blur);
+	position: static !important;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.1rem;
+	padding: 0.4rem 0.7rem 0.45rem !important;
+	background: none !important;
+	-webkit-backdrop-filter: none !important;
+	backdrop-filter: none !important;
+	box-shadow: none !important;
+}
+
+#videoOsdPage .chapterThumbText {
+	margin: 0 !important;
+	padding: 0 !important;
+	text-shadow: none !important;
+	color: #fff;
+	font-size: 0.85rem;
+	font-weight: 600;
+	line-height: 1.3;
+	font-variant-numeric: tabular-nums;
+}
+
+#videoOsdPage .chapterThumbText-dim {
+	font-size: 0.75rem;
+	font-weight: 500;
+	color: rgba(255, 255, 255, 0.65);
+}
+
+#videoOsdPage .chapterThumbText:empty {
+	display: none;
 }
 
 /* --- top bar: frosted back button -----------------------------------------
