@@ -3,7 +3,7 @@
 /*
  * @name        Cursor Dark
  * @author      T3lluz
- * @version     2.0.0
+ * @version     2.1.0
  * @description Neutral dark gray in the style of Cursor's editor theme with a purple accent, and Apple-style frosted glass on everything that floats. Port of the Stremio theme of the same name.
  * @swatches    #141414 #232323 #7b5bf5 #2a2a2a #e6e6e6
  *
@@ -1249,6 +1249,8 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 .layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) .itemBackdrop {
 	height: var(--cx-hero) !important;
 	background-position: center 20% !important;
+	/* fixed attachment clips the artwork on a hard rectangle */
+	background-attachment: scroll !important;
 }
 
 /* experimental layout: run the backdrop up under the glass header */
@@ -1257,32 +1259,55 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	height: calc(var(--cx-hero) + 48px) !important;
 }
 
-/* the fade: a little shade under the header, clear through the middle,
-   then an eased ramp (many stops, so no visible bands or edge) down to the
-   page colour */
+/* the fade: a short shade under the header, then a long ramp that is
+   already the page colour well above the bottom of the hero.  The ramp
+   used to finish on the hero's edge, which left a hard line where the
+   artwork met the page.  The extra pixels below the hero cover that seam. */
 .layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) .itemBackdrop::before {
 	content: "";
 	position: absolute;
-	inset: 0;
+	inset: 0 0 -16px 0;
 	pointer-events: none;
 	background: linear-gradient(180deg,
 		rgba(20, 20, 20, 0.5) 0%,
-		rgba(20, 20, 20, 0.22) 7%,
-		rgba(20, 20, 20, 0) 16%,
-		rgba(20, 20, 20, 0) 34%,
-		rgba(20, 20, 20, 0.03) 40%,
-		rgba(20, 20, 20, 0.08) 46%,
-		rgba(20, 20, 20, 0.15) 52%,
-		rgba(20, 20, 20, 0.24) 57%,
-		rgba(20, 20, 20, 0.35) 62%,
-		rgba(20, 20, 20, 0.47) 67%,
-		rgba(20, 20, 20, 0.59) 72%,
-		rgba(20, 20, 20, 0.7) 77%,
-		rgba(20, 20, 20, 0.8) 82%,
-		rgba(20, 20, 20, 0.88) 87%,
-		rgba(20, 20, 20, 0.94) 91.5%,
-		rgba(20, 20, 20, 0.98) 96%,
-		#141414 100%);
+		rgba(20, 20, 20, 0.16) 7%,
+		rgba(20, 20, 20, 0) 14%,
+		rgba(20, 20, 20, 0) 18%,
+		rgba(20, 20, 20, 0.05) 26%,
+		rgba(20, 20, 20, 0.12) 34%,
+		rgba(20, 20, 20, 0.22) 42%,
+		rgba(20, 20, 20, 0.36) 50%,
+		rgba(20, 20, 20, 0.52) 58%,
+		rgba(20, 20, 20, 0.68) 64%,
+		rgba(20, 20, 20, 0.84) 70%,
+		var(--cx-bg) 76%,
+		var(--cx-bg) 100%);
+}
+
+/* the fixed, page-wide artwork (Display → Backdrops).  Mask the picture
+   itself so it dissolves into the theme colour instead of being cut off
+   by the solid page below the hero.  Fully gone before the hero ends. */
+.layout-desktop body:has(#itemDetailPage:not(.hide) .detailImageContainer .portraitCard) .backdropImage {
+	-webkit-mask-image: linear-gradient(180deg,
+		#000 0%,
+		#000 12%,
+		rgba(0, 0, 0, 0.78) 26%,
+		rgba(0, 0, 0, 0.5) 38%,
+		rgba(0, 0, 0, 0.24) 50%,
+		rgba(0, 0, 0, 0.08) 60%,
+		transparent 68%);
+	mask-image: linear-gradient(180deg,
+		#000 0%,
+		#000 12%,
+		rgba(0, 0, 0, 0.78) 26%,
+		rgba(0, 0, 0, 0.5) 38%,
+		rgba(0, 0, 0, 0.24) 50%,
+		rgba(0, 0, 0, 0.08) 60%,
+		transparent 68%);
+	-webkit-mask-size: 100% 100%;
+	mask-size: 100% 100%;
+	-webkit-mask-repeat: no-repeat;
+	mask-repeat: no-repeat;
 }
 
 /* the app-wide backdrop: let it through on the hero (stock dims it to 14%) */
@@ -1294,9 +1319,12 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	opacity: 0.12 !important;
 }
 
-/* the page below the hero is solid, so the app-wide backdrop stops there */
+/* the page below the hero is solid, so the app-wide backdrop stops there.
+   A one-pixel overlap hides a seam if the hero height rounds short. */
 .layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) .detailPageWrapperContainer {
+	margin-top: -1px;
 	background-color: var(--cx-bg) !important;
+	background-image: none !important;
 }
 
 .layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) .detailImageContainer .portraitCard {
@@ -1563,19 +1591,23 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
    8. Player: one Apple-style glass panel
    --------------------------------------------------------------------------
    Title, seek bar and buttons sit together on a single frosted panel with
-   rounded corners; buttons are rounded squares and the transport is
-   centred.  Jellyfin hides the controls by fading the whole bottom bar;
-   here the bar stays opaque and the panel fades itself, so the blur never
-   switches off mid-fade.  The bar still moves by half a pixel so Jellyfin
-   gets the transitionend it waits for before removing it.
+   rounded corners; buttons are rounded squares.  The transport stays in
+   the row (rating and "ends at" on the left, tools on the right) so it
+   never covers the other controls.  Jellyfin hides the controls by fading
+   the whole bottom bar; here the bar stays clear and the panel fades
+   itself, so the blur never switches off mid-fade.  The bar still moves
+   by half a pixel so Jellyfin gets the transitionend it waits for before
+   removing it.
 
+   The panel is a flat tint plus blur: no gradient wash over the picture.
    If a browser draws hardware-decoded video on its own layer, nothing on
-   the page can blur it; the panel's tint is dense enough to read as frosted
-   glass either way.
+   the page can blur it; the tint is dense enough to read as dark glass
+   either way.
    ========================================================================== */
 
 #videoOsdPage .videoOsdBottom {
-	background: linear-gradient(0deg, rgba(0, 0, 0, 0.45), transparent) !important;
+	background: none !important;
+	background-image: none !important;
 	padding: 5rem 0 max(env(safe-area-inset-bottom), 1.25rem) !important;
 	opacity: 1 !important;
 	transform: translateY(0);
@@ -1587,15 +1619,16 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	background: transparent !important;
 }
 
-/* the panel */
+/* the panel: one flat frosted surface, no sheen and no gradient */
 #videoOsdPage .osdControls {
 	flex-grow: 0 !important;
-	width: min(100% - 2.5rem, 68rem);
+	width: min(100% - 2rem, 88rem);
 	margin: 0 auto;
 	padding: 0.85rem 1rem 0.7rem !important;
 	box-sizing: border-box;
 	border-radius: var(--cx-r-xl);
-	background-color: rgba(30, 30, 32, 0.62);
+	background-color: rgba(18, 18, 20, 0.74);
+	background-image: none !important;
 	-webkit-backdrop-filter: var(--cx-blur);
 	backdrop-filter: var(--cx-blur);
 	box-shadow: var(--cx-edge), var(--cx-shadow);
@@ -1645,13 +1678,29 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	justify-content: flex-end;
 }
 
-/* buttons row: transport in the middle, the rest at the sides */
+/* buttons row: rating and end time on the left, transport in the free
+   middle, everything else on the right.  In flow, so nothing stacks. */
 #videoOsdPage .videoOsdBottom .buttons {
 	position: relative;
+	display: flex;
+	flex-wrap: nowrap;
 	padding: 0.35rem 0 0 !important;
 	gap: 0.15rem;
 	align-items: center;
 	min-height: 3rem;
+}
+
+#videoOsdPage .videoOsdBottom .buttons > * {
+	order: 3;
+}
+
+#videoOsdPage .videoOsdBottom .buttons > .btnUserRating {
+	order: 0;
+	flex-shrink: 0;
+}
+
+#videoOsdPage .videoOsdBottom .buttons > .osdTimeText {
+	order: 1;
 }
 
 #videoOsdPage .videoOsdBottom .buttons .paper-icon-button-light {
@@ -1659,12 +1708,14 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	height: 2.6rem;
 	margin: 0 !important;
 	padding: 0 !important;
+	flex-shrink: 0;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	border-radius: var(--cx-r-md) !important;
 	color: rgba(255, 255, 255, 0.92) !important;
 	background-color: transparent;
+	background-image: none;
 	transition: background-color var(--cx-fast) ease, transform var(--cx-fast) ease;
 }
 
@@ -1686,9 +1737,15 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 }
 
 #videoOsdPage .videoOsdBottom .buttons > div[dir] {
+	order: 2;
+	position: static;
 	display: flex;
 	align-items: center;
-	gap: 0.35rem;
+	flex-shrink: 0;
+	gap: 0.15rem;
+	margin-left: auto;
+	margin-right: auto;
+	transform: none;
 }
 
 #videoOsdPage .videoOsdBottom .btnPause {
@@ -1700,19 +1757,28 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	font-size: 2rem !important;
 }
 
-@media (min-width: 56em) {
+/* narrow windows: transport on its own row, still not covering the tools */
+@media (max-width: 48em) {
+	#videoOsdPage .videoOsdBottom .buttons {
+		flex-wrap: wrap;
+		justify-content: center;
+		row-gap: 0.15rem;
+	}
+
 	#videoOsdPage .videoOsdBottom .buttons > div[dir] {
-		position: absolute;
-		left: 50%;
-		top: calc(50% + 0.175rem);
-		transform: translate(-50%, -50%);
+		flex: 1 0 100%;
+		order: -1;
+		margin-left: 0;
+		margin-right: 0;
+		justify-content: center;
 	}
 }
 
 #videoOsdPage .osdTimeText {
-	margin-left: 0.4rem !important;
+	margin: 0 0.35rem 0 0.15rem !important;
 	font-size: 0.8rem;
 	opacity: 0.7;
+	white-space: nowrap;
 }
 
 #videoOsdPage .videoOsdBottom .btnUserRating .material-icons.ratingbutton-icon-withrating {
@@ -1721,12 +1787,18 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 
 /* volume */
 #videoOsdPage .videoOsdBottom .volumeButtons {
+	display: flex;
 	align-items: center;
+	flex: 0 1 auto;
+	min-width: 0;
 }
 
 #videoOsdPage .videoOsdBottom .osdVolumeSliderContainer {
-	width: 6.5rem !important;
-	margin: 0 0.6rem 0 0.2rem !important;
+	width: auto !important;
+	flex: 1 1 4.5rem;
+	min-width: 2.75rem;
+	max-width: 6.5rem;
+	margin: 0 0.4rem 0 0.1rem !important;
 }
 
 /* sliders: white fill, the player stays neutral */
@@ -1763,12 +1835,12 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 /* Firefox (and Zen, LibreWolf, ...) composites video on its own layer and
    never runs backdrop-filter over it, so glass in the player would just be
    a thin tint over a sharp picture.  There the player's surfaces get a
-   denser "thick material" instead, with a soft sheen, so they still read as
-   frosted glass.  Everything else in Firefox does get real blur. */
+   denser flat tint, with no gradient.  Everything else in Firefox does
+   get real blur. */
 @supports selector(:-moz-focusring) {
 	#videoOsdPage .osdControls {
-		background-color: rgba(26, 26, 28, 0.82);
-		background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 40%);
+		background-color: rgba(16, 16, 18, 0.92);
+		background-image: none !important;
 	}
 
 	.osdHeader .headerButton,
@@ -1776,18 +1848,21 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	.skipIntro .emby-button,
 	.upNextDialog,
 	.playerStats {
-		background-color: rgba(26, 26, 28, 0.82) !important;
+		background-color: rgba(16, 16, 18, 0.92) !important;
+		background-image: none !important;
 	}
 
-	#videoOsdPage .videoOsdBottom:not(.videoOsdBottom-hidden) {
-		background: linear-gradient(0deg, rgba(0, 0, 0, 0.55), transparent) !important;
+	#videoOsdPage .videoOsdBottom {
+		background: none !important;
+		background-image: none !important;
 	}
 }
 
 /* --- top bar: frosted back button ----------------------------------------- */
 
 .skinHeader-withBackground.osdHeader {
-	background: linear-gradient(180deg, rgba(0, 0, 0, 0.42) 0%, transparent) !important;
+	background: none !important;
+	background-image: none !important;
 	-webkit-backdrop-filter: none !important;
 	backdrop-filter: none !important;
 }
