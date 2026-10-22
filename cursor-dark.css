@@ -3,9 +3,9 @@
 /*
  * @name        Cursor Dark
  * @author      T3lluz
- * @version     2.1.0
+ * @version     2.2.0
  * @description Neutral dark gray in the style of Cursor's editor theme with a purple accent, and Apple-style frosted glass on everything that floats. Port of the Stremio theme of the same name.
- * @swatches    #141414 #232323 #7b5bf5 #2a2a2a #e6e6e6
+ * @swatches    #181818 #0d0d0e #232323 #7b5bf5 #e6e6e6
  *
  * Install: Dashboard -> General -> Custom CSS code (server-wide), or
  * Settings -> Display -> Custom CSS (just you), and paste
@@ -35,11 +35,11 @@
 
 :root,
 :root[data-theme] {
-	--cx-bg:          #141414;
-	--cx-surface:     #1c1c1c;
-	--cx-surface-2:   #232323;
-	--cx-raised:      #2a2a2a;
-	--cx-chrome:      #0e0e0e;   /* the frame around the content */
+	--cx-bg:          #181818;   /* the inner sheet: a step lighter than the frame */
+	--cx-surface:     #1f1f1f;
+	--cx-surface-2:   #262626;
+	--cx-raised:      #2c2c2c;
+	--cx-chrome:      #0d0d0e;   /* the frame's colour where there is no glass */
 	--cx-text:        #e6e6e6;
 	--cx-text-dim:    #9a9a9a;
 	--cx-accent:      #7b5bf5;   /* Stremio purple: selection, progress, focus */
@@ -56,11 +56,16 @@
 	--cx-mat-thin:    rgba(30, 30, 32, 0.42);
 	--cx-mat:         rgba(30, 30, 32, 0.6);
 	--cx-mat-thick:   rgba(28, 28, 30, 0.78);
-	--cx-mat-header:  rgba(16, 16, 17, 0.62);
+	--cx-mat-frame:   rgba(9, 9, 10, 0.74);   /* header and frame: one darker glass */
+	--cx-mat-header:  var(--cx-mat-frame);
 	--cx-blur:        blur(30px) saturate(180%);
 	--cx-blur-sm:     blur(14px) saturate(170%);
 	--cx-edge:        inset 0 0 0 1px rgba(255, 255, 255, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 	--cx-shadow:      0 24px 60px -24px rgba(0, 0, 0, 0.7), 0 2px 10px rgba(0, 0, 0, 0.25);
+
+	/* the player's glass: thick enough to read over any picture */
+	--cx-mat-player:  rgba(40, 40, 44, 0.42);
+	--cx-blur-player: blur(60px) saturate(110%) brightness(0.74);
 
 	/* glass over artwork and video: a little brighter */
 	--cx-glass-btn:   rgba(255, 255, 255, 0.12);
@@ -103,10 +108,10 @@
 	--jf-palette-secondary-contrastTextChannel: 255 255 255;
 
 	--jf-palette-background-default:           var(--cx-bg);
-	--jf-palette-background-defaultChannel:    20 20 20;
+	--jf-palette-background-defaultChannel:    24 24 24;
 	--jf-palette-background-defaultImage:      none;
 	--jf-palette-background-paper:             var(--cx-surface);
-	--jf-palette-background-paperChannel:      28 28 28;
+	--jf-palette-background-paperChannel:      31 31 31;
 
 	--jf-palette-AppBar-defaultBg:             var(--cx-mat-header);
 	--jf-palette-AppBar-darkBg:                var(--cx-mat-header);
@@ -534,7 +539,11 @@ html {
    5. Header, tabs, frame and drawer
    ========================================================================== */
 
-/* --- header: frosted glass (classic and experimental layouts) ------------ */
+/* --- header: frosted glass (classic and experimental layouts) ------------
+   The glass is drawn by ::before, not by the header itself.  An element
+   with backdrop-filter is the backdrop root for everything inside it, so
+   the frame corners hanging off the header (::after) would only blur the
+   header's own contents, never the page under them. */
 
 .skinHeader {
 	contain: none !important;   /* stock paint containment would clip the frame */
@@ -542,20 +551,25 @@ html {
 
 .skinHeader-withBackground:not(.osdHeader),
 .MuiAppBar-root {
-	background-color: var(--cx-mat-header) !important;
-	background-image: none !important;
-	-webkit-backdrop-filter: var(--cx-blur) !important;
-	backdrop-filter: var(--cx-blur) !important;
-	box-shadow: none !important;
-}
-
-/* over a details backdrop: no band, a blur that fades out downwards */
-.skinHeader.semiTransparent,
-body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root {
 	background: transparent !important;
 	-webkit-backdrop-filter: none !important;
 	backdrop-filter: none !important;
+	box-shadow: none !important;
 }
+
+.skinHeader-withBackground:not(.osdHeader):not(.semiTransparent)::before,
+body:not(:has(#itemDetailPage:not(.hide))) .MuiAppBar-root::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+	background-color: var(--cx-mat-header);
+	-webkit-backdrop-filter: var(--cx-blur);
+	backdrop-filter: var(--cx-blur);
+}
+
+/* over a details backdrop: no band, a blur that fades out downwards */
 
 .skinHeader.semiTransparent::before,
 body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
@@ -734,18 +748,40 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 }
 
 /* --- frame ----------------------------------------------------------------
-   Like the Stremio theme: a dark chrome strip down the sides and along the
-   bottom, and the content on a rounded card with a hairline edge.  The page
-   scrolls under the glass header, so the card starts at the header's bottom
-   edge, whatever height the header has on that page:
-     - the top half hangs off the header (::after, top: 100%)
-     - the bottom corners are a separate strip fixed to the bottom of the
-       window (body::before)
-   Each is a transparent box with a huge chrome shadow around it, clipped so
-   the shadow never reaches above the box.  Left out on details pages, in the
-   player, on login and in the dashboard; browsers without :has() skip it. */
+   Like the Stremio theme: the content sits on a lighter, rounded inner
+   sheet, and a slim frame runs round it.  The frame is the same frosted
+   glass as the header, on all four sides, so rows scrolled under its edges
+   blur instead of being cut off, and it reads as one piece with the header.
+
+   Each piece is its own small glass layer, because a blur costs what it
+   covers:
+     - the side strips (body::before, body::after) run the full height,
+       behind the ends of the header, whose own glass stops at the strips
+     - the top corners hang off the header (header::after, top: 100%), so
+       they follow the header's height, whatever it is on that page
+     - the bottom band with the lower corners (html::before)
+   Corners are cut with masks (mask-composite), which every engine with
+   backdrop-filter supports.  Left out on details pages, in the player, on
+   login and in the dashboard; browsers without :has() skip it. */
+
+:root {
+	--cx-frame-z: 998;   /* just under the classic header (999) */
+}
+
+:root:has(.MuiAppBar-root) {
+	--cx-frame-z: 1099;   /* just under the experimental header (1100) */
+}
 
 @media (min-width: 641px) {
+	/* the header's glass stops where the side strips take over */
+	body:not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .type-interior:not(.hide), .MuiDrawer-docked)):not(:has(.MuiAppBar-root)) .skinHeader:not(.semiTransparent):not(.osdHeader):not(.hide)::before,
+	body:not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .type-interior:not(.hide), .MuiDrawer-docked)) .MuiAppBar-root::before {
+		left: var(--cx-frame-gap);
+		right: var(--cx-frame-gap);
+	}
+
+	/* top corners: a band the height of the radius, minus the sheet's
+	   rounded top (a centre strip plus a circle at each corner) */
 	body:not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .type-interior:not(.hide), .MuiDrawer-docked)):not(:has(.MuiAppBar-root)) .skinHeader:not(.semiTransparent):not(.osdHeader):not(.hide)::after,
 	body:not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .type-interior:not(.hide), .MuiDrawer-docked)) .MuiAppBar-root::after {
 		content: "";
@@ -753,32 +789,71 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 		top: 100%;
 		left: var(--cx-frame-gap);
 		right: var(--cx-frame-gap);
-		height: 100vh;
-		border-radius: var(--cx-frame-radius) var(--cx-frame-radius) 0 0;
-		box-shadow: 0 0 0 100vmax var(--cx-chrome), inset 0 0 0 1px var(--cx-line-strong);
-		clip-path: inset(0 -100vmax -100vmax -100vmax);
+		height: var(--cx-frame-radius);
 		pointer-events: none;
+		background-color: var(--cx-mat-frame);
+		-webkit-backdrop-filter: var(--cx-blur);
+		backdrop-filter: var(--cx-blur);
+		--r: var(--cx-frame-radius);
+		--cx-corner: radial-gradient(circle closest-side, #000 calc(100% - 1px), transparent);
+		-webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0), var(--cx-corner), var(--cx-corner);
+		mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0), var(--cx-corner), var(--cx-corner);
+		-webkit-mask-position: 0 0, var(--r) 0, 0 0, 100% 0;
+		mask-position: 0 0, var(--r) 0, 0 0, 100% 0;
+		-webkit-mask-size: 100% 100%, calc(100% - 2 * var(--r)) 100%, calc(2 * var(--r)) calc(2 * var(--r)), calc(2 * var(--r)) calc(2 * var(--r));
+		mask-size: 100% 100%, calc(100% - 2 * var(--r)) 100%, calc(2 * var(--r)) calc(2 * var(--r)), calc(2 * var(--r)) calc(2 * var(--r));
+		-webkit-mask-repeat: no-repeat;
+		mask-repeat: no-repeat;
+		-webkit-mask-composite: source-out, source-over, source-over, source-over;
+		mask-composite: subtract, add, add, add;
 	}
 
-	body:not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .type-interior:not(.hide), .MuiDrawer-docked)):has(.skinHeader:not(.semiTransparent):not(.osdHeader):not(.hide), .MuiAppBar-root)::before {
+	/* side strips */
+	body:not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .type-interior:not(.hide), .MuiDrawer-docked)):has(.skinHeader:not(.semiTransparent):not(.osdHeader):not(.hide), .MuiAppBar-root)::before,
+	body:not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .type-interior:not(.hide), .MuiDrawer-docked)):has(.skinHeader:not(.semiTransparent):not(.osdHeader):not(.hide), .MuiAppBar-root)::after {
+		content: "";
+		position: fixed;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		width: var(--cx-frame-gap);
+		z-index: var(--cx-frame-z);
+		pointer-events: none;
+		background-color: var(--cx-mat-frame);
+		-webkit-backdrop-filter: var(--cx-blur);
+		backdrop-filter: var(--cx-blur);
+	}
+
+	body:not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .type-interior:not(.hide), .MuiDrawer-docked)):has(.skinHeader:not(.semiTransparent):not(.osdHeader):not(.hide), .MuiAppBar-root)::after {
+		left: auto;
+		right: 0;
+	}
+
+	/* bottom band, between the strips, minus the sheet's rounded foot */
+	html:not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .type-interior:not(.hide), .MuiDrawer-docked)):has(.skinHeader:not(.semiTransparent):not(.osdHeader):not(.hide), .MuiAppBar-root)::before {
 		content: "";
 		position: fixed;
 		left: var(--cx-frame-gap);
 		right: var(--cx-frame-gap);
-		bottom: var(--cx-frame-gap);
-		height: var(--cx-frame-radius);
-		box-sizing: border-box;
-		border: 1px solid var(--cx-line-strong);
-		border-top: 0;
-		border-radius: 0 0 var(--cx-frame-radius) var(--cx-frame-radius);
-		box-shadow: 0 0 0 100vmax var(--cx-chrome);
-		clip-path: inset(0 -100vmax -100vmax -100vmax);
+		bottom: 0;
+		height: calc(var(--cx-frame-gap) + var(--cx-frame-radius));
+		z-index: var(--cx-frame-z);
 		pointer-events: none;
-		z-index: 1000;   /* just above the classic header, below dialogs */
-	}
-
-	body:has(.MuiAppBar-root)::before {
-		z-index: 1101 !important;   /* just above the experimental header */
+		background-color: var(--cx-mat-frame);
+		-webkit-backdrop-filter: var(--cx-blur);
+		backdrop-filter: var(--cx-blur);
+		--r: var(--cx-frame-radius);
+		--cx-corner: radial-gradient(circle closest-side, #000 calc(100% - 1px), transparent);
+		-webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0), var(--cx-corner), var(--cx-corner);
+		mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0), var(--cx-corner), var(--cx-corner);
+		-webkit-mask-position: 0 0, var(--r) 0, 0 calc(-1 * var(--r)), right 0 top calc(-1 * var(--r));
+		mask-position: 0 0, var(--r) 0, 0 calc(-1 * var(--r)), right 0 top calc(-1 * var(--r));
+		-webkit-mask-size: 100% 100%, calc(100% - 2 * var(--r)) var(--r), calc(2 * var(--r)) calc(2 * var(--r)), calc(2 * var(--r)) calc(2 * var(--r));
+		mask-size: 100% 100%, calc(100% - 2 * var(--r)) var(--r), calc(2 * var(--r)) calc(2 * var(--r)), calc(2 * var(--r)) calc(2 * var(--r));
+		-webkit-mask-repeat: no-repeat;
+		mask-repeat: no-repeat;
+		-webkit-mask-composite: source-out, source-over, source-over, source-over;
+		mask-composite: subtract, add, add, add;
 	}
 }
 
@@ -880,6 +955,14 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 
 /* hover: the poster lifts a little and its edge lights up.  The edge is drawn
    inside the poster (no ring outside it), on top of the artwork. */
+
+/* Jellyfin gives every card paint containment, and in a row the poster box
+   has no left margin, so the lift and its shadow were clipped on the left
+   of every hovered tile.  Keep layout and style containment, drop paint. */
+.card:not(.show-animation) {
+	contain: layout style !important;
+}
+
 .cardScalable {
 	transition: transform var(--cx-med) var(--cx-ease), box-shadow var(--cx-med) var(--cx-ease);
 }
@@ -1117,7 +1200,7 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
    frosted.  Hairlines are inset shadows, as real borders push the ribbon
    off the floated poster. */
 .detailRibbon {
-	background: rgba(20, 20, 20, 0.55) !important;
+	background: rgba(24, 24, 24, 0.55) !important;   /* --cx-bg, so it meets the page flush */
 	-webkit-backdrop-filter: var(--cx-blur);
 	backdrop-filter: var(--cx-blur);
 	box-shadow: inset 0 1px 0 var(--cx-line), inset 0 -1px 0 var(--cx-line);
@@ -1239,18 +1322,50 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
    A tall backdrop that fades smoothly into the page, the poster dropped in
    favour of it, and the clear logo (or the title), info and buttons centred
    at its foot.  Episodes, people, albums and the rest keep the stock layout.
-   Works whether the artwork is the page's own backdrop or the app-wide one
-   ("Backdrops" in Display settings). */
 
-.layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) {
+   On desktop Jellyfin paints the artwork on the app-wide backdrop layer,
+   which is fixed to the window, while the hero and everything under it
+   scroll.  Any fade drawn on the page then slides over a picture that stays
+   put: the ramp gets squeezed and ends in a hard line as soon as you
+   scroll.  So on these pages the backdrop layer scrolls with the page (it
+   is absolute instead of fixed, the height of the hero) and the picture
+   fades out through a mask in its own box.  Nothing else draws a fade, the
+   artwork is fully gone at the hero's bottom edge, and the page below is
+   the same flat colour as the window, so there is no edge left to show.
+   Older versions put the artwork on the page's own .itemBackdrop instead;
+   it gets the same mask. */
+
+:root {
 	--cx-hero: 74vh;
+	--cx-hero-fade: linear-gradient(180deg,
+		#000 0%,
+		#000 30%,
+		rgba(0, 0, 0, 0.97) 38%,
+		rgba(0, 0, 0, 0.9) 46%,
+		rgba(0, 0, 0, 0.78) 54%,
+		rgba(0, 0, 0, 0.62) 62%,
+		rgba(0, 0, 0, 0.44) 70%,
+		rgba(0, 0, 0, 0.27) 78%,
+		rgba(0, 0, 0, 0.13) 86%,
+		rgba(0, 0, 0, 0.04) 93%,
+		transparent 100%);
+}
+
+/* Jellyfin loads no backdrop in windows under 1000px wide, so there the
+   hero is just room for the title and buttons */
+@media (max-width: 999.98px) {
+	:root {
+		--cx-hero: 15rem;
+	}
 }
 
 .layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) .itemBackdrop {
 	height: var(--cx-hero) !important;
+	background-color: transparent !important;
 	background-position: center 20% !important;
-	/* fixed attachment clips the artwork on a hard rectangle */
 	background-attachment: scroll !important;
+	-webkit-mask-image: var(--cx-hero-fade);
+	mask-image: var(--cx-hero-fade);
 }
 
 /* experimental layout: run the backdrop up under the glass header */
@@ -1259,70 +1374,64 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	height: calc(var(--cx-hero) + 48px) !important;
 }
 
-/* the fade: a short shade under the header, then a long ramp that is
-   already the page colour well above the bottom of the hero.  The ramp
-   used to finish on the hero's edge, which left a hard line where the
-   artwork met the page.  The extra pixels below the hero cover that seam. */
-.layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) .itemBackdrop::before {
-	content: "";
-	position: absolute;
-	inset: 0 0 -16px 0;
-	pointer-events: none;
-	background: linear-gradient(180deg,
-		rgba(20, 20, 20, 0.5) 0%,
-		rgba(20, 20, 20, 0.16) 7%,
-		rgba(20, 20, 20, 0) 14%,
-		rgba(20, 20, 20, 0) 18%,
-		rgba(20, 20, 20, 0.05) 26%,
-		rgba(20, 20, 20, 0.12) 34%,
-		rgba(20, 20, 20, 0.22) 42%,
-		rgba(20, 20, 20, 0.36) 50%,
-		rgba(20, 20, 20, 0.52) 58%,
-		rgba(20, 20, 20, 0.68) 64%,
-		rgba(20, 20, 20, 0.84) 70%,
-		var(--cx-bg) 76%,
-		var(--cx-bg) 100%);
+/* the app-wide backdrop layer, scrolling with the page */
+.layout-desktop body:has(#itemDetailPage:not(.hide) .detailImageContainer .portraitCard) .backdropContainer {
+	position: absolute !important;
+	width: 100% !important;
+	height: var(--cx-hero) !important;
 }
 
-/* the fixed, page-wide artwork (Display → Backdrops).  Mask the picture
-   itself so it dissolves into the theme colour instead of being cut off
-   by the solid page below the hero.  Fully gone before the hero ends. */
+.layout-desktop body:has(.MuiAppBar-root):has(#itemDetailPage:not(.hide) .detailImageContainer .portraitCard) .backdropContainer {
+	height: calc(var(--cx-hero) + 48px) !important;
+}
+
 .layout-desktop body:has(#itemDetailPage:not(.hide) .detailImageContainer .portraitCard) .backdropImage {
-	-webkit-mask-image: linear-gradient(180deg,
-		#000 0%,
-		#000 12%,
-		rgba(0, 0, 0, 0.78) 26%,
-		rgba(0, 0, 0, 0.5) 38%,
-		rgba(0, 0, 0, 0.24) 50%,
-		rgba(0, 0, 0, 0.08) 60%,
-		transparent 68%);
-	mask-image: linear-gradient(180deg,
-		#000 0%,
-		#000 12%,
-		rgba(0, 0, 0, 0.78) 26%,
-		rgba(0, 0, 0, 0.5) 38%,
-		rgba(0, 0, 0, 0.24) 50%,
-		rgba(0, 0, 0, 0.08) 60%,
-		transparent 68%);
-	-webkit-mask-size: 100% 100%;
-	mask-size: 100% 100%;
-	-webkit-mask-repeat: no-repeat;
-	mask-repeat: no-repeat;
+	background-position: center 20% !important;
+	-webkit-mask-image: var(--cx-hero-fade);
+	mask-image: var(--cx-hero-fade);
 }
 
-/* the app-wide backdrop: let it through on the hero (stock dims it to 14%) */
+/* the other details pages (episodes, people, albums, ...) keep the stock
+   banner, and get the same fix: the backdrop scrolls with the page and is
+   gone by the banner's bottom edge, under the frosted ribbon */
+:root {
+	--cx-banner: 40vh;   /* stock .itemBackdrop height */
+	--cx-banner-fade: linear-gradient(180deg, #000 0%, #000 40%, rgba(0, 0, 0, 0.8) 58%, rgba(0, 0, 0, 0.5) 74%, rgba(0, 0, 0, 0.2) 88%, transparent 100%);
+}
+
+@media (max-height: 31.25em) {
+	:root {
+		--cx-banner: 52vh;
+	}
+}
+
+.layout-desktop body:has(#itemDetailPage:not(.hide)):not(:has(#itemDetailPage:not(.hide) .detailImageContainer .portraitCard)) .backdropContainer {
+	position: absolute !important;
+	width: 100% !important;
+	height: var(--cx-banner) !important;
+}
+
+.layout-desktop body:has(.MuiAppBar-root):has(#itemDetailPage:not(.hide)):not(:has(#itemDetailPage:not(.hide) .detailImageContainer .portraitCard)) .backdropContainer {
+	height: calc(var(--cx-banner) + 48px) !important;
+}
+
+.layout-desktop body:has(#itemDetailPage:not(.hide)):not(:has(#itemDetailPage:not(.hide) .detailImageContainer .portraitCard)) .backdropImage {
+	-webkit-mask-image: var(--cx-banner-fade);
+	mask-image: var(--cx-banner-fade);
+}
+
+/* the dimming layer over the backdrop: let the artwork through on the hero
+   (stock dims it to 14%) */
 .backgroundContainer.withBackdrop {
 	transition: opacity var(--cx-slow) ease;
 }
 
 .layout-desktop body:has(#itemDetailPage:not(.hide) .detailImageContainer .portraitCard) .backgroundContainer.withBackdrop {
-	opacity: 0.12 !important;
+	opacity: 0.1 !important;
 }
 
-/* the page below the hero is solid, so the app-wide backdrop stops there.
-   A one-pixel overlap hides a seam if the hero height rounds short. */
+/* under the hero: the plain page colour, the same as the window behind */
 .layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) .detailPageWrapperContainer {
-	margin-top: -1px;
 	background-color: var(--cx-bg) !important;
 	background-image: none !important;
 }
@@ -1590,62 +1699,84 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 /* ==========================================================================
    8. Player: one Apple-style glass panel
    --------------------------------------------------------------------------
-   Title, seek bar and buttons sit together on a single frosted panel with
-   rounded corners; buttons are rounded squares.  The transport stays in
-   the row (rating and "ends at" on the left, tools on the right) so it
-   never covers the other controls.  Jellyfin hides the controls by fading
-   the whole bottom bar; here the bar stays clear and the panel fades
-   itself, so the blur never switches off mid-fade.  The bar still moves
-   by half a pixel so Jellyfin gets the transitionend it waits for before
-   removing it.
+   Title, seek bar and buttons sit together on one floating frosted panel,
+   like the controls in Apple's players: plain white glyphs, a large
+   play/pause in the middle, a thin scrubber that thickens under the
+   pointer.  The transport stays in the row (rating and "ends at" on the
+   left, tools on the right) so it never covers the other controls.
 
-   The panel is a flat tint plus blur: no gradient wash over the picture.
-   If a browser draws hardware-decoded video on its own layer, nothing on
-   the page can blur it; the tint is dense enough to read as dark glass
-   either way.
+   Why the blur used to be missing: Jellyfin gives the bottom bar
+   `will-change: opacity` and fades the bar (and the top bar) as a whole.
+   Both make the bar a "backdrop root", and an element with backdrop-filter
+   can only blur what is painted inside its backdrop root.  The panel sat
+   inside the bar, so it blurred an empty box and showed only its tint, in
+   Chrome and Firefox alike.  Here the bars never fade and never promise
+   to: the panel and the buttons fade themselves.  The bars still move by
+   half a pixel so Jellyfin gets the transitionend it waits for before it
+   hides them.
    ========================================================================== */
 
 #videoOsdPage .videoOsdBottom {
 	background: none !important;
 	background-image: none !important;
-	padding: 5rem 0 max(env(safe-area-inset-bottom), 1.25rem) !important;
+	padding: 5rem 0 max(env(safe-area-inset-bottom), 1.5rem) !important;
 	opacity: 1 !important;
+	will-change: auto !important;
 	transform: translateY(0);
-	transition: transform var(--cx-slow) ease, background-color var(--cx-slow) ease !important;
+	transition: transform var(--cx-slow) ease !important;
 }
 
 #videoOsdPage .videoOsdBottom.videoOsdBottom-hidden {
 	transform: translateY(0.5px);
-	background: transparent !important;
 }
 
-/* the panel: one flat frosted surface, no sheen and no gradient */
+/* the panel */
 #videoOsdPage .osdControls {
 	flex-grow: 0 !important;
-	width: min(100% - 2rem, 88rem);
+	width: min(100% - 2.5rem, 64rem);
 	margin: 0 auto;
-	padding: 0.85rem 1rem 0.7rem !important;
+	padding: 0.9rem 1.1rem 0.6rem !important;
 	box-sizing: border-box;
-	border-radius: var(--cx-r-xl);
-	background-color: rgba(18, 18, 20, 0.74);
+	border-radius: 22px;
+	background-color: var(--cx-mat-player);
 	background-image: none !important;
-	-webkit-backdrop-filter: var(--cx-blur);
-	backdrop-filter: var(--cx-blur);
-	box-shadow: var(--cx-edge), var(--cx-shadow);
+	-webkit-backdrop-filter: var(--cx-blur-player);
+	backdrop-filter: var(--cx-blur-player);
+	box-shadow:
+		inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+		inset 0 1px 0 rgba(255, 255, 255, 0.08),
+		0 30px 60px -20px rgba(0, 0, 0, 0.55),
+		0 2px 12px rgba(0, 0, 0, 0.2);
 	transition: opacity var(--cx-slow) ease, transform var(--cx-slow) var(--cx-ease) !important;
 }
 
 #videoOsdPage .videoOsdBottom-hidden .osdControls {
 	opacity: 0;
-	transform: translateY(10px);
+	transform: translateY(12px) scale(0.985);
 	pointer-events: none;
+}
+
+/* Jellyfin shows the bar from display: none, which skips the transition;
+   start the panel from its hidden state so it still glides in */
+@starting-style {
+	#videoOsdPage .osdControls {
+		opacity: 0;
+		transform: translateY(12px) scale(0.985);
+	}
+}
+
+/* no glass at all (old browsers): a solid dark panel instead */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+	#videoOsdPage .osdControls {
+		background-color: rgba(20, 20, 22, 0.92);
+	}
 }
 
 /* title */
 #videoOsdPage .osdMainTextContainer,
 #videoOsdPage .osdSecondaryMediaInfo {
-	margin: 0 0 0.35rem !important;
-	padding: 0 0.15rem !important;
+	margin: 0 0 0.3rem !important;
+	padding: 0 0.2rem !important;
 }
 
 #videoOsdPage .osdTitle {
@@ -1653,14 +1784,24 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	font-size: 1rem !important;
 	font-weight: 600;
 	letter-spacing: -0.01em;
+	color: #fff;
+}
+
+#videoOsdPage .osdSecondaryMediaInfo {
+	font-size: 0.8rem;
+	color: rgba(255, 255, 255, 0.6);
 }
 
 /* seek row */
 #videoOsdPage .osdControls > .flex:has(> .sliderContainer),
 #videoOsdPage .osdControls > .flex.flex-direction-row {
-	gap: 0.75rem;
+	gap: 0.8rem;
 	margin: 0;
-	padding: 0 0.15rem;
+	padding: 0 0.2rem;
+}
+
+#videoOsdPage .osdControls > .flex > .sliderContainer {
+	margin: 0.45rem 0 !important;
 }
 
 #videoOsdPage .osdPositionText,
@@ -1668,9 +1809,9 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	margin: 0 !important;
 	padding: 0 !important;
 	min-width: 3.2em;
-	font-size: 0.8rem;
+	font-size: 0.78rem;
 	font-weight: 500;
-	opacity: 0.7;
+	color: rgba(255, 255, 255, 0.65);
 	font-variant-numeric: tabular-nums;
 }
 
@@ -1684,10 +1825,10 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	position: relative;
 	display: flex;
 	flex-wrap: nowrap;
-	padding: 0.35rem 0 0 !important;
-	gap: 0.15rem;
+	padding: 0.2rem 0 0 !important;
+	gap: 0.1rem;
 	align-items: center;
-	min-height: 3rem;
+	min-height: 3.2rem;
 }
 
 #videoOsdPage .videoOsdBottom .buttons > * {
@@ -1704,8 +1845,8 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 }
 
 #videoOsdPage .videoOsdBottom .buttons .paper-icon-button-light {
-	width: 2.6rem;
-	height: 2.6rem;
+	width: 2.5rem;
+	height: 2.5rem;
 	margin: 0 !important;
 	padding: 0 !important;
 	flex-shrink: 0;
@@ -1713,10 +1854,10 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	align-items: center;
 	justify-content: center;
 	border-radius: var(--cx-r-md) !important;
-	color: rgba(255, 255, 255, 0.92) !important;
+	color: rgba(255, 255, 255, 0.88) !important;
 	background-color: transparent;
 	background-image: none;
-	transition: background-color var(--cx-fast) ease, transform var(--cx-fast) ease;
+	transition: background-color var(--cx-fast) ease, color var(--cx-fast) ease, transform var(--cx-fast) var(--cx-ease);
 }
 
 #videoOsdPage .videoOsdBottom .buttons .paper-icon-button-light.hide {
@@ -1724,7 +1865,7 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 }
 
 #videoOsdPage .videoOsdBottom .buttons .paper-icon-button-light .material-icons {
-	font-size: 1.45rem !important;
+	font-size: 1.4rem !important;
 }
 
 #videoOsdPage .videoOsdBottom .buttons .paper-icon-button-light:hover:not(:disabled) {
@@ -1733,28 +1874,35 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 }
 
 #videoOsdPage .videoOsdBottom .buttons .paper-icon-button-light:active:not(:disabled) {
-	transform: scale(0.94);
+	transform: scale(0.92);
 }
 
+/* transport */
 #videoOsdPage .videoOsdBottom .buttons > div[dir] {
 	order: 2;
 	position: static;
 	display: flex;
 	align-items: center;
 	flex-shrink: 0;
-	gap: 0.15rem;
+	gap: 0.35rem;
 	margin-left: auto;
 	margin-right: auto;
 	transform: none;
 }
 
-#videoOsdPage .videoOsdBottom .btnPause {
-	width: 3rem !important;
-	height: 3rem !important;
+#videoOsdPage .videoOsdBottom .buttons > div[dir] .paper-icon-button-light .material-icons {
+	font-size: 1.65rem !important;
 }
 
-#videoOsdPage .videoOsdBottom .btnPause .material-icons {
-	font-size: 2rem !important;
+#videoOsdPage .videoOsdBottom .btnPause {
+	width: 3.2rem !important;
+	height: 3.2rem !important;
+	border-radius: var(--cx-r-lg) !important;
+	color: #fff !important;
+}
+
+#videoOsdPage .videoOsdBottom .buttons > div[dir] .btnPause .material-icons {
+	font-size: 2.4rem !important;
 }
 
 /* narrow windows: transport on its own row, still not covering the tools */
@@ -1762,7 +1910,7 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	#videoOsdPage .videoOsdBottom .buttons {
 		flex-wrap: wrap;
 		justify-content: center;
-		row-gap: 0.15rem;
+		row-gap: 0.1rem;
 	}
 
 	#videoOsdPage .videoOsdBottom .buttons > div[dir] {
@@ -1775,9 +1923,9 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 }
 
 #videoOsdPage .osdTimeText {
-	margin: 0 0.35rem 0 0.15rem !important;
-	font-size: 0.8rem;
-	opacity: 0.7;
+	margin: 0 0.35rem 0 0.2rem !important;
+	font-size: 0.78rem;
+	color: rgba(255, 255, 255, 0.65);
 	white-space: nowrap;
 }
 
@@ -1791,28 +1939,58 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	align-items: center;
 	flex: 0 1 auto;
 	min-width: 0;
+	margin: 0 0.15rem !important;
 }
 
 #videoOsdPage .videoOsdBottom .osdVolumeSliderContainer {
 	width: auto !important;
 	flex: 1 1 4.5rem;
 	min-width: 2.75rem;
-	max-width: 6.5rem;
+	max-width: 6rem;
 	margin: 0 0.4rem 0 0.1rem !important;
 }
 
-/* sliders: white fill, the player stays neutral */
+/* sliders: white fill, the player stays neutral.  The scrubber is thin and
+   thickens under the pointer; its knob only shows then. */
 #videoOsdPage .mdl-slider-background-upper {
-	background-color: rgba(255, 255, 255, 0.22) !important;
+	background-color: rgba(255, 255, 255, 0.25) !important;
 }
 
 #videoOsdPage .mdl-slider-background-lower {
-	background-color: #f2f2f2 !important;
+	background-color: #fff !important;
 }
 
 #videoOsdPage .osdControls .mdl-slider-background-flex {
-	height: 5px !important;
-	margin-top: -2.5px !important;
+	height: 4px !important;
+	margin-top: -2px !important;
+	transition: height var(--cx-fast) ease, margin-top var(--cx-fast) ease;
+}
+
+#videoOsdPage .osdControls .sliderContainer:hover .mdl-slider-background-flex {
+	height: 7px !important;
+	margin-top: -3.5px !important;
+}
+
+#videoOsdPage .osdPositionSlider::-webkit-slider-thumb {
+	transform: scale(0.6);
+	opacity: 0;
+	transition: opacity var(--cx-fast) ease, transform var(--cx-fast) ease;
+}
+
+#videoOsdPage .osdPositionSlider::-moz-range-thumb {
+	transform: scale(0.6);
+	opacity: 0;
+	transition: opacity var(--cx-fast) ease, transform var(--cx-fast) ease;
+}
+
+#videoOsdPage .sliderContainer:hover .osdPositionSlider::-webkit-slider-thumb {
+	transform: none;
+	opacity: 1;
+}
+
+#videoOsdPage .sliderContainer:hover .osdPositionSlider::-moz-range-thumb {
+	transform: none;
+	opacity: 1;
 }
 
 #videoOsdPage .sliderMarker {
@@ -1832,39 +2010,23 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	backdrop-filter: var(--cx-blur);
 }
 
-/* Firefox (and Zen, LibreWolf, ...) composites video on its own layer and
-   never runs backdrop-filter over it, so glass in the player would just be
-   a thin tint over a sharp picture.  There the player's surfaces get a
-   denser flat tint, with no gradient.  Everything else in Firefox does
-   get real blur. */
-@supports selector(:-moz-focusring) {
-	#videoOsdPage .osdControls {
-		background-color: rgba(16, 16, 18, 0.92);
-		background-image: none !important;
-	}
-
-	.osdHeader .headerButton,
-	.skip-button,
-	.skipIntro .emby-button,
-	.upNextDialog,
-	.playerStats {
-		background-color: rgba(16, 16, 18, 0.92) !important;
-		background-image: none !important;
-	}
-
-	#videoOsdPage .videoOsdBottom {
-		background: none !important;
-		background-image: none !important;
-	}
-}
-
-/* --- top bar: frosted back button ----------------------------------------- */
+/* --- top bar: frosted back button -----------------------------------------
+   Same story as the bottom bar: stock fades the whole header, which would
+   switch the buttons' blur off for the length of the fade. */
 
 .skinHeader-withBackground.osdHeader {
 	background: none !important;
 	background-image: none !important;
 	-webkit-backdrop-filter: none !important;
 	backdrop-filter: none !important;
+	opacity: 1 !important;
+	will-change: auto !important;
+	transform: translateY(0);
+	transition: transform var(--cx-slow) ease !important;
+}
+
+.skinHeader-withBackground.osdHeader.osdHeader-hidden {
+	transform: translateY(-0.5px);
 }
 
 .osdHeader .headerTop {
@@ -1876,30 +2038,64 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	gap: 0.4rem;
 }
 
-.osdHeader .headerButton {
+.osdHeader .headerButton,
+.osdHeader .MuiIconButton-root {
 	width: 2.75rem !important;
 	height: 2.75rem !important;
 	margin: 0 !important;
-	border-radius: var(--cx-r-md) !important;
+	padding: 0 !important;
+	border-radius: var(--cx-r-lg) !important;
 	color: #fff !important;
-	background-color: rgba(30, 30, 32, 0.55) !important;
-	-webkit-backdrop-filter: var(--cx-blur);
-	backdrop-filter: var(--cx-blur);
-	box-shadow: var(--cx-edge);
-	transition: background-color var(--cx-fast) ease;
+	background-color: var(--cx-mat-player) !important;
+	-webkit-backdrop-filter: var(--cx-blur-player);
+	backdrop-filter: var(--cx-blur-player);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+	transition: background-color var(--cx-fast) ease, opacity var(--cx-slow) ease, transform var(--cx-slow) var(--cx-ease);
 }
 
-.osdHeader .headerButton:hover {
-	background-color: rgba(60, 60, 64, 0.6) !important;
+.osdHeader .headerButton:hover,
+.osdHeader .MuiIconButton-root:hover {
+	background-color: rgba(70, 70, 74, 0.55) !important;
+}
+
+/* hidden: a class in the classic player, an inline opacity in the newer
+   one (its header is a React fade, kept at full opacity above) */
+.osdHeader-hidden .headerButton,
+.osdHeader[style*="opacity: 0"] .MuiIconButton-root,
+.osdHeader[style*="opacity: 0"] .MuiTypography-root {
+	opacity: 0;
+	transform: translateY(-8px);
+	pointer-events: none;
+}
+
+@starting-style {
+	.osdHeader .headerButton,
+	.osdHeader .MuiIconButton-root {
+		opacity: 0;
+		transform: translateY(-8px);
+	}
+}
+
+/* the newer player's header: title beside the back button */
+.osdHeader .videoOsd-appBar {
+	gap: 0.5rem;
+	padding-top: 1rem !important;
+}
+
+.osdHeader .videoOsd-appBar .MuiTypography-root {
+	font-weight: 600;
+	color: #fff;
+	text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
+	transition: opacity var(--cx-slow) ease, transform var(--cx-slow) var(--cx-ease);
 }
 
 /* --- popups in the player --------------------------------------------------- */
 
 /* "up next" */
 .upNextDialog {
-	background-color: var(--cx-mat) !important;
-	-webkit-backdrop-filter: var(--cx-blur);
-	backdrop-filter: var(--cx-blur);
+	background-color: var(--cx-mat-player) !important;
+	-webkit-backdrop-filter: var(--cx-blur-player);
+	backdrop-filter: var(--cx-blur-player);
 	border: 0 !important;
 	border-radius: var(--cx-r-xl) !important;
 	box-shadow: var(--cx-edge), var(--cx-shadow);
@@ -1919,9 +2115,9 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 /* skip intro / outro */
 .skip-button,
 .skipIntro .emby-button {
-	background-color: rgba(30, 30, 32, 0.6) !important;
-	-webkit-backdrop-filter: var(--cx-blur);
-	backdrop-filter: var(--cx-blur);
+	background-color: var(--cx-mat-player) !important;
+	-webkit-backdrop-filter: var(--cx-blur-player);
+	backdrop-filter: var(--cx-blur-player);
 	box-shadow: var(--cx-edge) !important;
 	border: 0 !important;
 	border-radius: var(--cx-r-md) !important;

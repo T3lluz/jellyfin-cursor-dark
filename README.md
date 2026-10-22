@@ -49,15 +49,19 @@ Put overrides under the `@import` line in the same box:
   because this overrides its colours.
 - Selectors use Jellyfin's own class names only, so web client updates
   shouldn't break it.
-- Movie, series and season pages use a full-height hero: the backdrop fades
-  into the page, and the clear logo, info and frosted Play button sit
-  centred at its foot. Episodes show as a grid of 16:9 cards. Both ideas
-  come from [ElegantFin](https://github.com/lscambo13/ElegantFin); the CSS
-  here is written from scratch.
-- Apple-style frosted glass throughout: header, menus, dialogs, drawer and
-  buttons. Panels are rounded rectangles, buttons rounded squares. Purple is
-  kept for progress bars, toggles and focus.
-- The player is one glass panel (title, seek bar, buttons) with the
-  transport centred. In Firefox-based browsers (Zen included) it uses a
-  denser tint, since Firefox may not blur video behind it.
+- Movie, series and season pages use a full-height hero: the backdrop
+  scrolls with the page and fades into it, and the clear logo, info and
+  frosted Play button sit centred at its foot. Episodes show as a grid of
+  16:9 cards. Both ideas come from
+  [ElegantFin](https://github.com/lscambo13/ElegantFin); the CSS here is
+  written from scratch.
+- The content sits on a lighter inner sheet. A slim frame of frosted glass
+  runs all the way round it and joins the header, so rows that scroll under
+  the edges blur instead of being cut off.
+- Apple-style frosted glass throughout: header, frame, menus, dialogs,
+  drawer and buttons. Panels are rounded rectangles, buttons rounded
+  squares. Purple is kept for progress bars, toggles and focus.
+- The player is one floating glass panel (title, seek bar, buttons) with
+  the transport centred, and it blurs the video behind it in Chromium- and
+  Firefox-based browsers (Zen included).
 - Works in both the classic layout (Desktop Legacy) and the newer one.
