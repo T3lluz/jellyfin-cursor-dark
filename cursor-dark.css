@@ -754,6 +754,7 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 	margin: 0 0.18rem !important;
 	padding: 0 !important;
 	display: inline-flex !important;
+	flex-direction: row !important;
 	align-items: center;
 	justify-content: center;
 }
@@ -848,8 +849,38 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 
 .layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) .itemBackdrop {
 	height: var(--cx-hero) !important;
-	-webkit-mask-image: linear-gradient(180deg, #000 40%, rgba(0, 0, 0, 0.55) 72%, transparent 100%);
-	mask-image: linear-gradient(180deg, #000 40%, rgba(0, 0, 0, 0.55) 72%, transparent 100%);
+}
+
+/* experimental layout: run the backdrop up under the glass header */
+.layout-desktop body:has(.MuiAppBar-root) #itemDetailPage:has(.detailImageContainer .portraitCard) .itemBackdrop {
+	margin-top: -48px;
+	height: calc(var(--cx-hero) + 48px) !important;
+}
+
+/* fade the artwork into the page: a little shade under the header, clear
+   through the middle, then down into the background colour */
+.layout-desktop #itemDetailPage:has(.detailImageContainer .portraitCard) .itemBackdrop::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(180deg,
+		rgba(14, 14, 14, 0.45) 0,
+		rgba(14, 14, 14, 0) 18%,
+		rgba(20, 20, 20, 0) 38%,
+		rgba(20, 20, 20, 0.55) 66%,
+		rgba(20, 20, 20, 0.92) 88%,
+		var(--cx-bg) 100%);
+	pointer-events: none;
+}
+
+/* with "Backdrops" on, the artwork is the page-wide backdrop instead, which
+   Jellyfin dims to 14%: let it through on the hero */
+.backgroundContainer.withBackdrop {
+	transition: opacity var(--cx-slow) ease;
+}
+
+.layout-desktop body:has(#itemDetailPage:not(.hide) .detailImageContainer .portraitCard) .backgroundContainer.withBackdrop {
+	opacity: 0.18 !important;
 }
 
 .layout-desktop .detailPagePrimaryContainer:has(.detailImageContainer .portraitCard) .detailImageContainer .portraitCard {
@@ -991,18 +1022,6 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 	color: var(--cx-text-dim);
 }
 
-/* cast & crew: round portraits */
-.personCard .cardScalable,
-.personCard .cardImageContainer,
-.personCard .cardContent,
-.personCard .blurhash-canvas {
-	border-radius: 50% !important;
-}
-
-.card.personCard:is(:hover, :focus, :focus-within) .cardBox:not(.visualCardBox) .cardScalable {
-	border-radius: 50% !important;
-}
-
 /* --- episodes as a grid of 16:9 cards (after ElegantFin) ----------------- */
 
 @media (min-width: 50em) {
@@ -1095,6 +1114,18 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 
 .listItemImageButton:hover {
 	background-color: var(--cx-accent) !important;
+}
+
+/* with a mouse it only shows on hover */
+.layout-desktop .listItemImageButton {
+	opacity: 0;
+	font-size: 0.85em;
+	transition: opacity var(--cx-fast) ease, background-color var(--cx-fast) ease !important;
+}
+
+.layout-desktop .listItem:hover .listItemImageButton,
+.layout-desktop .listItemImageButton:focus {
+	opacity: 1;
 }
 
 .listItemImage {
