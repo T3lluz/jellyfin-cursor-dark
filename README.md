@@ -49,5 +49,12 @@ Put overrides under the `@import` line in the same box:
   because this overrides its colours.
 - Selectors use Jellyfin's own class names only, so web client updates
   shouldn't break it.
+- Movie, series and season pages use a full-height hero: the backdrop fades
+  into the page, and the clear logo, info and frosted Play button sit
+  centred at its foot. Episodes show as a grid of 16:9 cards. Both ideas
+  come from [ElegantFin](https://github.com/lscambo13/ElegantFin); the CSS
+  here is written from scratch.
+- Play buttons, menus, dialogs and the player controls are frosted glass.
+  Purple is kept for selected tabs and progress bars.
 - The player controls are three glass pills: the seek bar, the transport
   buttons and the right-hand buttons.

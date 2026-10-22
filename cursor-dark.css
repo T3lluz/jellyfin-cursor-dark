@@ -1,7 +1,7 @@
 /*
  * @name        Cursor Dark
  * @author      T3lluz
- * @version     1.0.0
+ * @version     1.1.0
  * @description Neutral dark gray in the style of Cursor's editor theme with a purple accent. Flat, minimal, frosted glass on everything that floats. Port of the Stremio theme of the same name.
  * @swatches    #141414 #232323 #7b5bf5 #2a2a2a #e6e6e6
  *
@@ -1393,9 +1393,10 @@ body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root {
 	background-color: #f2f2f2 !important;
 }
 
+/* the seek fill is white too: the player stays neutral glass */
 #videoOsdPage .osdPositionSlider ~ .mdl-slider-background-flex-container .mdl-slider-background-lower,
 #videoOsdPage .sliderContainer:not(.osdVolumeSliderContainer) .mdl-slider-background-lower {
-	background-color: var(--cx-accent) !important;
+	background-color: #f2f2f2 !important;
 }
 
 #videoOsdPage .mdl-slider-background-flex {
