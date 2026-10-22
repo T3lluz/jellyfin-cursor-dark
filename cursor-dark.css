@@ -3,7 +3,7 @@
 /*
  * @name        Cursor Dark
  * @author      T3lluz
- * @version     2.3.0
+ * @version     2.4.0
  * @description Neutral dark gray in the style of Cursor's editor theme with a purple accent, and Apple-style frosted glass on everything that floats. Port of the Stremio theme of the same name.
  * @swatches    #202020 #0f0f10 #2d2d2d #7b5bf5 #e6e6e6
  *
@@ -783,8 +783,13 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
    plus one window tall, so inside it the header's bottom edge sits at
    100% - 100vh and the window's bottom edge at 100vh, whatever height the
    header has on that page.  The sheet is a rounded rectangle between those
-   edges, built from two rectangles and four circles.  A ring one pixel
-   larger is painted underneath as the sheet's hairline edge.
+   edges, built from two rectangles and four circles.
+
+   The sheet's edge is a separate overlay (::after) the exact size of the
+   hole, hung from the header the same way: one rounded box with a hairline
+   and a small inner shadow, so the glass reads as sitting slightly above
+   the sheet.  One box keeps the edge even all the way round; drawing it
+   from pieces doubled up where the pieces met.
 
    Left out on details pages, in the player, on login and in the
    dashboard; browsers without :has() skip it. */
@@ -798,8 +803,6 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 		--bottom: calc(100vh - var(--g));    /* sheet's bottom edge */
 		--hole-x: linear-gradient(180deg, transparent var(--top), #000 var(--top), #000 var(--bottom), transparent var(--bottom));
 		--hole-y: linear-gradient(180deg, transparent calc(var(--top) + var(--r)), #000 calc(var(--top) + var(--r)), #000 calc(var(--bottom) - var(--r)), transparent calc(var(--bottom) - var(--r)));
-		--ring-x: linear-gradient(180deg, transparent calc(var(--top) - 1px), var(--cx-line-strong) calc(var(--top) - 1px), var(--cx-line-strong) calc(var(--bottom) + 1px), transparent calc(var(--bottom) + 1px));
-		--ring-y: linear-gradient(180deg, transparent calc(var(--top) + var(--r)), var(--cx-line-strong) calc(var(--top) + var(--r)), var(--cx-line-strong) calc(var(--bottom) - var(--r)), transparent calc(var(--bottom) - var(--r)));
 		--tl: calc(var(--g) + var(--r)) calc(var(--top) + var(--r));
 		--tr: calc(100% - var(--g) - var(--r)) calc(var(--top) + var(--r));
 		--bl: calc(var(--g) + var(--r)) calc(var(--bottom) - var(--r));
@@ -807,16 +810,6 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 
 		bottom: auto;
 		height: calc(100% + 100vh);
-
-		background-image:
-			var(--ring-x), var(--ring-y),
-			radial-gradient(circle at var(--tl), var(--cx-line-strong) calc(var(--r) + 0.5px), transparent calc(var(--r) + 1.5px)),
-			radial-gradient(circle at var(--tr), var(--cx-line-strong) calc(var(--r) + 0.5px), transparent calc(var(--r) + 1.5px)),
-			radial-gradient(circle at var(--bl), var(--cx-line-strong) calc(var(--r) + 0.5px), transparent calc(var(--r) + 1.5px)),
-			radial-gradient(circle at var(--br), var(--cx-line-strong) calc(var(--r) + 0.5px), transparent calc(var(--r) + 1.5px));
-		background-position: calc(var(--g) + var(--r)) 0, calc(var(--g) - 1px) 0, 0 0, 0 0, 0 0, 0 0;
-		background-size: calc(100% - 2 * (var(--g) + var(--r))) 100%, calc(100% - 2 * var(--g) + 2px) 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
-		background-repeat: no-repeat;
 
 		-webkit-mask-image:
 			linear-gradient(#000 0 0),
@@ -840,6 +833,23 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 		mask-repeat: no-repeat;
 		-webkit-mask-composite: source-out, source-over, source-over, source-over, source-over, source-over, source-over;
 		mask-composite: subtract, add, add, add, add, add, add;
+	}
+
+	/* the sheet's edge: from the header's bottom to the frame's bottom */
+	body:not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .type-interior:not(.hide), .MuiDrawer-docked)):not(:has(.MuiAppBar-root)) .skinHeader:not(.semiTransparent):not(.osdHeader):not(.hide)::after,
+	body:not(:has(#itemDetailPage:not(.hide), #videoOsdPage:not(.hide), .standalonePage:not(.hide), .type-interior:not(.hide), .MuiDrawer-docked)) .MuiAppBar-root::after {
+		content: "";
+		position: absolute;
+		top: 100%;
+		left: var(--cx-frame-gap);
+		right: var(--cx-frame-gap);
+		height: calc(100vh - 100% - var(--cx-frame-gap));
+		border-radius: var(--cx-frame-radius);
+		pointer-events: none;
+		box-shadow:
+			inset 0 0 0 1px rgba(0, 0, 0, 0.32),
+			inset 0 1px 0 1px rgba(0, 0, 0, 0.12),
+			inset 0 1px 7px rgba(0, 0, 0, 0.4);
 	}
 }
 
@@ -1149,6 +1159,45 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 .emby-scroller.scrollX::-webkit-scrollbar,
 .itemsContainer.scrollX::-webkit-scrollbar {
 	display: none;
+}
+
+/* --- rows on the home screen: a Netflix-style pop ---------------------------
+   Jellyfin marks its home rows padded-top/bottom-focusscale and gives them
+   room for a focus zoom on TVs only.  On desktop they get the same room,
+   and a hovered poster grows from its bottom edge (so it never covers its
+   own title), rises above its neighbours and casts a deeper shadow. */
+@media (min-width: 50em) {
+	.layout-desktop .emby-scroller.padded-top-focusscale {
+		padding-top: 1.75rem !important;
+		margin-top: -1.75rem !important;
+	}
+
+	.layout-desktop .emby-scroller.padded-bottom-focusscale {
+		padding-bottom: 1.25rem !important;
+		margin-bottom: -1.25rem !important;
+	}
+
+	.layout-desktop .padded-top-focusscale .card-hoverable {
+		position: relative;
+		z-index: 0;
+	}
+
+	.layout-desktop .padded-top-focusscale .card-hoverable:is(:hover, :focus-within) {
+		z-index: 2;
+	}
+
+	.layout-desktop .padded-top-focusscale .card-hoverable .cardScalable {
+		transform-origin: 50% 100%;
+	}
+
+	.layout-desktop .padded-top-focusscale .card-hoverable:is(:hover, :focus-within) .cardScalable {
+		transform: scale(1.08);
+		box-shadow: 0 26px 50px -20px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.06);
+	}
+
+	.homeSectionsContainer .sectionTitle {
+		font-size: 1.35rem !important;
+	}
 }
 
 /* A-Z picker: inside the frame */
@@ -2240,6 +2289,7 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	}
 
 	.layout-desktop .card-hoverable:is(:hover, :focus-within) .cardScalable,
+	.layout-desktop .padded-top-focusscale .card-hoverable:is(:hover, :focus-within) .cardScalable,
 	.layout-desktop .listItem-largeImage:hover .listItemImage-large {
 		transform: none;
 	}
