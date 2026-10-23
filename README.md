@@ -77,10 +77,14 @@ such as Media Bar; a CSS theme can only restyle what Jellyfin shows.
   [ElegantFin](https://github.com/lscambo13/ElegantFin); the CSS here is
   written from scratch.
 - The header is one slim row. Home, Favourites and your libraries sit in
-  a navigation bar at the top middle (only the libraries you have), and
-  the current one is marked by a pill that stretches and slides when you
-  switch. The classic layout's bar shows from 1024px wide, the newer
-  layout's from 1200px; narrower windows keep the stock header.
+  a navigation bar at the top middle (only the libraries you have). The
+  current one is marked by a pill that slides over when you switch,
+  stretching toward the new item like Material's tab indicator, and the
+  bar's left half eases between Home on its own and Home and Favourites.
+  A library page's own tabs sit on the same row and fade at the edge
+  when there are more than fit. The classic layout's bar shows from
+  1024px wide, the newer layout's from 1200px; narrower windows keep the
+  stock header.
 - The content sits on a lighter inner sheet. The header and a slim frame
   round the sheet are one pane of frosted glass, so rows that scroll under
   any edge blur instead of being cut off.

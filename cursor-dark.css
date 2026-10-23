@@ -3,7 +3,7 @@
 /*
  * @name        Cursor Dark
  * @author      T3lluz
- * @version     2.6.0
+ * @version     2.7.0
  * @description Neutral dark gray in the style of Cursor's editor theme with a purple accent, and Apple-style frosted glass on everything that floats. Port of the Stremio theme of the same name.
  * @swatches    #202020 #0f0f10 #2d2d2d #7b5bf5 #e6e6e6
  *
@@ -23,7 +23,8 @@
  *
  * Performance rules this file sticks to:
  *   - backdrop-filter only on surfaces that float and are few at a time
- *   - only transform/opacity/colour are animated, never layout or blur
+ *   - only transform/opacity/colour are animated, never blur, and layout
+ *     only for the navigation bar's few small boxes in the header
  *   - an element with backdrop-filter is never inside a parent that fades
  *     its opacity: browsers stop blurring through a translucent parent, so
  *     the blur would only appear once the fade ends
@@ -88,6 +89,10 @@
 	--cx-seg-item-h: 2rem;
 	--cx-seg-h:      calc(var(--cx-seg-item-h) + 6px);   /* items plus the 3px rim */
 	--cx-seg-top:    calc(env(safe-area-inset-top, 0px) + (var(--cx-bar-h) - var(--cx-seg-h)) / 2);
+	--cx-nav-w:      6.5rem;   /* one item of the navigation bar */
+	--cx-nav-move:   480ms;
+	/* a soft spring: quick, settles with a ~3% overshoot */
+	--cx-spring:     linear(0, 0.032 3%, 0.111 6%, 0.255 10%, 0.412 14%, 0.563 18%, 0.722 23%, 0.844 28%, 0.941 34%, 0.996 40%, 1.023 47%, 1.028 55%, 1.02 64%, 1.009 74%, 1.002 86%, 1);
 
 	/* motion */
 	--cx-ease:  cubic-bezier(0.2, 0.9, 0.25, 1);   /* quick out, soft settle */
@@ -753,25 +758,91 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 
    The bar holds Home, Favourites and the libraries, like the newer
    layout's toolbar.  The library links only exist in the side drawer, so
-   the bar is made of the drawer's own links: while the drawer is closed
-   they are lifted out of it to fixed spots in the header row.  For that
-   the closed drawer drops everything that would make it their containing
-   block (transform, will-change, containment, blur); it is off screen then
-   anyway.  When it opens they go back into its list.
+   the bar is made of the drawer's own links: while the drawer is closed it
+   becomes a clear strip across the header row and its links are placed in
+   the bar.  When it opens they go back into its list, and the bar steps
+   aside until it closes.
 
    The bar's two halves meet at the middle of the window: Home (Home and
    Favourites on the home screen, where they are the page's own tabs) ends
-   there and the libraries start there.  Each half sizes to its own text,
-   so the bar can't be centred as a whole, but the seam stays put and the
-   libraries never move when you change page.
+   there and the libraries start there, so the libraries never move when
+   you change page.  Every item is the same width (the libraries share the
+   room they have when there are many), which lets the pill that marks the
+   current item work out its place from the item's number alone.
 
    Nested rules keep the long page test in one place.  Browsers without
    :has() skip the block and keep the stock two-row header. */
 
+@property --cx-pill-lead {
+	syntax: "<number>";
+	inherits: false;
+	initial-value: 0;
+}
+
+@property --cx-pill-trail {
+	syntax: "<number>";
+	inherits: false;
+	initial-value: 0;
+}
+
+@property --cx-home-shift {
+	syntax: "<number>";
+	inherits: true;
+	initial-value: 0;
+}
+
+@property --cx-fade-start {
+	syntax: "<length>";
+	inherits: false;
+	initial-value: 0px;
+}
+
+@property --cx-fade-end {
+	syntax: "<length>";
+	inherits: false;
+	initial-value: 0px;
+}
+
+@keyframes cx-home-shift {
+	from { --cx-home-shift: 1; }
+}
+
+@keyframes cx-nav-grow {
+	from { width: 0; opacity: 0; }
+}
+
+@keyframes cx-fade-in {
+	from { opacity: 0; }
+}
+
+@keyframes cx-scroll-fade {
+	0%   { --cx-fade-start: 0px;    --cx-fade-end: 2.5rem; }
+	10%  { --cx-fade-start: 2.5rem; }
+	90%  { --cx-fade-end: 2.5rem; }
+	100% { --cx-fade-start: 2.5rem; --cx-fade-end: 0px; }
+}
+
 @media (min-width: 64em) {
 	body:not(.dashboardDocument):not(.hiddenViewMenuBar):not(:has(.MuiAppBar-root, .skinHeader.osdHeader, .skinHeader.hide, .standalonePage:not(.hide))) {
 
-		/* the header is one flex row: left, tabs, right */
+		/* the number of libraries, which sets how wide each may be */
+		--cx-libs: 10;
+		&:has(.libraryMenuOptions > a:nth-of-type(1):last-of-type) { --cx-libs: 1; }
+		&:has(.libraryMenuOptions > a:nth-of-type(2):last-of-type) { --cx-libs: 2; }
+		&:has(.libraryMenuOptions > a:nth-of-type(3):last-of-type) { --cx-libs: 3; }
+		&:has(.libraryMenuOptions > a:nth-of-type(4):last-of-type) { --cx-libs: 4; }
+		&:has(.libraryMenuOptions > a:nth-of-type(5):last-of-type) { --cx-libs: 5; }
+		&:has(.libraryMenuOptions > a:nth-of-type(6):last-of-type) { --cx-libs: 6; }
+		&:has(.libraryMenuOptions > a:nth-of-type(7):last-of-type) { --cx-libs: 7; }
+		&:has(.libraryMenuOptions > a:nth-of-type(8):last-of-type) { --cx-libs: 8; }
+		&:has(.libraryMenuOptions > a:nth-of-type(9):last-of-type) { --cx-libs: 9; }
+
+		/* the libraries' half: up to one item width each, never closer
+		   than 14rem to the buttons on the right */
+		--cx-libs-w: min(calc(var(--cx-libs) * (var(--cx-nav-w) + 2px) + 2px), calc(50% - 14rem));
+
+		/* --- the header row ------------------------------------------------ */
+
 		& .skinHeader {
 			flex-direction: row;
 			align-items: center;
@@ -786,7 +857,7 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 
 		& .skinHeader .headerLeft {
 			flex: none;
-			max-width: calc(50% - 7rem);
+			max-width: calc(50% - 2 * var(--cx-nav-w) - 1.5rem);
 		}
 
 		& .skinHeader .headerRight {
@@ -796,13 +867,24 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 			height: var(--cx-bar-h);
 		}
 
-		/* the page's tabs follow the title and stop short of the bar */
+		/* the bar has Home, so the header's own home button can go */
+		& .skinHeader .headerHomeButton {
+			display: none !important;
+		}
+
+		/* with tabs, the library's name is already in the bar */
+		&.withSectionTabs:not(:has(#indexPage:not(.hide))) .skinHeader .pageTitle {
+			display: none;
+		}
+
+		/* --- the page's own tabs: plain text after the title ----------------- */
+
 		& .skinHeader .headerTabs {
 			position: static !important;
 			flex: 0 1 auto;
 			min-width: 0;
 			width: auto;
-			margin: 0 calc(50% + 7rem) 0 0.25rem !important;
+			margin: 0 calc(50% + var(--cx-nav-w) + 1.25rem) 0 0.25rem !important;
 			padding: 0 !important;
 			transform: none;
 			display: flex !important;
@@ -819,7 +901,6 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 			scrollbar-width: none;
 		}
 
-		/* plain text beside the bar, so the two don't read as one control */
 		&:not(:has(#indexPage:not(.hide))) .skinHeader .headerTabs .emby-tabs-slider {
 			padding: 0 !important;
 			background: none;
@@ -827,7 +908,8 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 		}
 
 		&:not(:has(#indexPage:not(.hide))) .skinHeader .headerTabs .emby-tab-button {
-			padding: 0 0.8rem !important;
+			padding: 0 0.75rem !important;
+			animation: cx-fade-in var(--cx-med) ease both;
 		}
 
 		&:not(:has(#indexPage:not(.hide))) .skinHeader .headerTabs .emby-tab-button-active {
@@ -835,22 +917,44 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 			box-shadow: none;
 		}
 
-		/* with tabs, the library's name is already in the bar */
-		&.withSectionTabs:not(:has(#indexPage:not(.hide))) .skinHeader .pageTitle {
-			display: none;
+		/* more tabs than fit: the row fades out at the side that has more.
+		   Where scroll-driven animations work the fade follows the scroll;
+		   Firefox gets a fixed fade on the right when the row is likely to
+		   run over (by the number of tabs and the window's width). */
+		&:not(:has(#indexPage:not(.hide))) .skinHeader .headerTabs .emby-tabs {
+			-webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--cx-fade-start), #000 calc(100% - var(--cx-fade-end)), transparent);
+			mask-image: linear-gradient(90deg, transparent, #000 var(--cx-fade-start), #000 calc(100% - var(--cx-fade-end)), transparent);
 		}
 
-		/* the bar has Home, so the header's own home button can go */
-		& .skinHeader .headerHomeButton {
-			display: none !important;
+		@supports (animation-timeline: scroll()) {
+			&:not(:has(#indexPage:not(.hide))) .skinHeader .headerTabs .emby-tabs {
+				animation: cx-scroll-fade linear both;
+				animation-timeline: scroll(self inline);
+			}
 		}
 
-		/* --- the bar ------------------------------------------------------- */
+		/* a tab is about 86px; the row has half the window less ~228px */
+		@supports not (animation-timeline: scroll()) {
+			@media (max-width: 1144px) {
+				&:not(:has(#indexPage:not(.hide))) .skinHeader .headerTabs .emby-tabs:has(.emby-tab-button:nth-child(4)) { --cx-fade-end: 2.5rem; }
+			}
+			@media (max-width: 1316px) {
+				&:not(:has(#indexPage:not(.hide))) .skinHeader .headerTabs .emby-tabs:has(.emby-tab-button:nth-child(5)) { --cx-fade-end: 2.5rem; }
+			}
+			@media (max-width: 1488px) {
+				&:not(:has(#indexPage:not(.hide))) .skinHeader .headerTabs .emby-tabs:has(.emby-tab-button:nth-child(6)) { --cx-fade-end: 2.5rem; }
+			}
+			@media (max-width: 1660px) {
+				&:not(:has(#indexPage:not(.hide))) .skinHeader .headerTabs .emby-tabs:has(.emby-tab-button:nth-child(7)) { --cx-fade-end: 2.5rem; }
+			}
+			@media (max-width: 1832px) {
+				&:not(:has(#indexPage:not(.hide))) .skinHeader .headerTabs .emby-tabs:has(.emby-tab-button:nth-child(8)) { --cx-fade-end: 2.5rem; }
+			}
+		}
 
-		/* the closed drawer becomes a clear strip across the header row that
-		   holds the bar.  The links are placed absolutely in it rather than
-		   fixed on their own: a fixed box nested in another fixed one can't
-		   be an anchor for the sliding pill. */
+		/* --- the bar ---------------------------------------------------------- */
+
+		/* the closed drawer: a clear strip across the header row */
 		& .mainDrawer:not(.drawer-open) {
 			top: 0;
 			bottom: auto;
@@ -869,47 +973,74 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 			pointer-events: none;
 		}
 
-		/* it slides in from its usual spot; closing is instant */
+		/* it slides in from its usual spot; closing is instant (sliding out
+		   would carry the bar with it), and the bar fades back in */
 		& .mainDrawer {
 			transition-property: transform !important;
+		}
+
+		& .mainDrawer:not(.drawer-open) {
+			transition: none !important;
+			animation: cx-fade-in var(--cx-med) ease;
 		}
 
 		& .mainDrawer:not(.drawer-open) .mainDrawer-scrollContainer {
 			display: contents !important;
 		}
 
-		/* the left half: the drawer's Home link, framed as its own control */
-		& .mainDrawer:not(.drawer-open) .mainDrawer-scrollContainer > a.navMenuOption[href="#/home"] {
-			position: absolute;
-			top: var(--cx-seg-top);
-			right: 50%;
-			height: var(--cx-seg-h);
-			padding: 2px !important;
-			border: 1px solid var(--cx-line);
-			border-right: 0;
-			border-radius: calc(var(--cx-r-md) + 3px) 0 0 calc(var(--cx-r-md) + 3px) !important;
-			box-sizing: border-box;
-			background-color: rgba(255, 255, 255, 0.06) !important;
-			pointer-events: auto;
-		}
-
-		& .mainDrawer:not(.drawer-open) .mainDrawer-scrollContainer > a.navMenuOption[href="#/home"] .navMenuOptionText {
-			display: inline-flex;
-			align-items: center;
-			height: var(--cx-seg-item-h);
-			padding: 0 1rem;
-			border-radius: var(--cx-r-md);
-			transition: background-color var(--cx-fast) ease;
-		}
-
-		& .mainDrawer:not(.drawer-open) .mainDrawer-scrollContainer > a.navMenuOption[href="#/home"]:hover .navMenuOptionText {
-			background-color: rgba(255, 255, 255, 0.05);
-		}
-
 		& .mainDrawer:not(.drawer-open) .mainDrawer-scrollContainer > :not(a[href="#/home"], .libraryMenuOptions),
 		& .mainDrawer:not(.drawer-open) .libraryMenuOptions > :not(a),
-		& .mainDrawer:not(.drawer-open) .navMenuOptionIcon {
+		& .mainDrawer:not(.drawer-open) .navMenuOptionIcon,
+		& .mainDrawer:not(.drawer-open) .libraryMenuOptions:not(:has(> a)) {
 			display: none !important;
+		}
+
+		/* the items: one width, the text centred; the pill marks the current one */
+		& .mainDrawer:not(.drawer-open) .navMenuOption,
+		&:has(#indexPage:not(.hide)) .skinHeader .headerTabs .emby-tab-button {
+			flex: 1 1 0;
+			min-width: 0;
+			display: inline-flex !important;
+			align-items: center;
+			justify-content: center;
+			height: var(--cx-seg-item-h);
+			margin: 0 !important;
+			padding: 0 !important;
+			border-radius: var(--cx-r-md) !important;
+			background: none !important;
+			box-shadow: none !important;
+			color: rgba(230, 230, 230, 0.62) !important;
+			font-size: 0.875rem;
+			font-weight: 500;
+			white-space: nowrap;
+			overflow: hidden;
+			transition: background-color var(--cx-fast) ease, color var(--cx-fast) ease;
+		}
+
+		& .mainDrawer:not(.drawer-open) .navMenuOptionText,
+		&:has(#indexPage:not(.hide)) .skinHeader .headerTabs .emby-button-foreground {
+			min-width: 0;
+			margin: 0 !important;
+			padding: 0 0.6rem;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+
+		& .mainDrawer:not(.drawer-open) .libraryMenuOptions > .navMenuOption:hover,
+		&:has(#indexPage:not(.hide)) .skinHeader .headerTabs .emby-tab-button:hover {
+			background-color: rgba(255, 255, 255, 0.05) !important;
+			color: #fff !important;
+		}
+
+		& .mainDrawer:not(.drawer-open) .navMenuOption-selected,
+		&:has(#indexPage:not(.hide)) .skinHeader .headerTabs .emby-tab-button-active {
+			color: #fff !important;
+		}
+
+		& .mainDrawer:not(.drawer-open) .navMenuOption:focus-visible,
+		& .skinHeader .headerTabs .emby-tab-button:focus-visible {
+			outline: 2px solid rgba(var(--cx-accent-rgb), 0.9);
+			outline-offset: -2px;
 		}
 
 		/* the right half: the libraries */
@@ -917,10 +1048,11 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 			position: absolute;
 			top: var(--cx-seg-top);
 			left: 50%;
+			box-sizing: border-box;
+			width: var(--cx-libs-w);
 			display: flex;
 			gap: 2px;
-			max-width: calc(50% - 14rem);   /* clear of the buttons on the right */
-			padding: 3px;
+			padding: 3px 3px 3px 1px;
 			overflow-x: auto;
 			scrollbar-width: none;
 			border-radius: 0 calc(var(--cx-r-md) + 3px) calc(var(--cx-r-md) + 3px) 0;
@@ -929,38 +1061,55 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 			pointer-events: auto;
 		}
 
-		/* the links: the same items as the tabs */
-		& .mainDrawer:not(.drawer-open) .navMenuOption {
+		/* the left half on most pages: the drawer's Home link, framed.
+		   Arriving from the home screen it starts as wide as Home and
+		   Favourites were, with Home where it was, and closes up to one
+		   item (--cx-home-shift runs from 1 to 0).  The animation is set
+		   whatever the drawer is doing, so opening and closing it doesn't
+		   start it again; only the bar's own rules use the number. */
+		& .mainDrawer-scrollContainer > a.navMenuOption[href="#/home"] {
+			animation: cx-home-shift var(--cx-nav-move) var(--cx-spring) both;
+		}
+
+		& .mainDrawer:not(.drawer-open) .mainDrawer-scrollContainer > a.navMenuOption[href="#/home"] {
+			position: absolute;
+			top: var(--cx-seg-top);
+			right: 50%;
 			flex: none;
-			display: inline-flex !important;
-			align-items: center;
-			height: var(--cx-seg-item-h);
-			margin: 0 !important;
-			padding: 0 1rem !important;
-			border-radius: var(--cx-r-md) !important;
-			color: rgba(230, 230, 230, 0.62) !important;
-			font-size: 0.875rem;
-			font-weight: 500;
-			white-space: nowrap;
-		}
-
-		& .mainDrawer:not(.drawer-open) .navMenuOption:hover {
-			color: #fff !important;
-			background-color: rgba(255, 255, 255, 0.05) !important;
-		}
-
-		& .mainDrawer:not(.drawer-open) .navMenuOption.navMenuOption-selected {
-			color: #fff !important;
-			background-color: rgba(255, 255, 255, 0.14) !important;
-			box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-		}
-
-		& .mainDrawer:not(.drawer-open) .navMenuOptionText {
-			margin: 0 !important;
+			box-sizing: border-box;
+			height: var(--cx-seg-h);
+			padding: 2px 1px 2px calc(2px + var(--cx-home-shift) * (var(--cx-nav-w) + 2px)) !important;
+			border: 1px solid var(--cx-line);
+			border-right: 0;
+			border-radius: calc(var(--cx-r-md) + 3px) 0 0 calc(var(--cx-r-md) + 3px) !important;
+			background: rgba(255, 255, 255, 0.06) !important;
 			overflow: visible;
+			pointer-events: auto;
 		}
 
-		/* the home screen: its Home / Favourites tabs are the left half */
+		& .mainDrawer:not(.drawer-open) .mainDrawer-scrollContainer > a.navMenuOption[href="#/home"] .navMenuOptionText {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			box-sizing: border-box;
+			width: var(--cx-nav-w);
+			height: var(--cx-seg-item-h);
+			border-radius: var(--cx-r-md);
+			translate: calc(-1 * var(--cx-home-shift) * (var(--cx-nav-w) + 2px)) 0;
+			transition: background-color var(--cx-fast) ease;
+		}
+
+		& .mainDrawer:not(.drawer-open) .mainDrawer-scrollContainer > a.navMenuOption[href="#/home"]:hover {
+			color: #fff !important;
+		}
+
+		& .mainDrawer:not(.drawer-open) .mainDrawer-scrollContainer > a.navMenuOption[href="#/home"]:hover .navMenuOptionText {
+			background-color: rgba(255, 255, 255, 0.05);
+		}
+
+		/* the left half on the home screen: its Home and Favourites tabs.
+		   They are drawn afresh on each visit, and Favourites grows in from
+		   nothing, which moves Home over from where the Home link was. */
 		&:has(#indexPage:not(.hide)) .mainDrawer:not(.drawer-open) .mainDrawer-scrollContainer > a[href="#/home"] {
 			display: none !important;
 		}
@@ -976,40 +1125,80 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 		}
 
 		&:has(#indexPage:not(.hide)) .skinHeader .headerTabs .emby-tabs-slider {
+			padding: 3px 1px 3px 3px !important;
 			border-radius: calc(var(--cx-r-md) + 3px) 0 0 calc(var(--cx-r-md) + 3px);
 			box-shadow: inset 1px 0 0 var(--cx-line), inset 0 1px 0 var(--cx-line), inset 0 -1px 0 var(--cx-line);
 		}
 
-		/* the sliding pill (see "sliding pill" below) stands in for the
-		   current item's own highlight.  It sits under the drawer and its
-		   dimming, so an open drawer covers it. */
-		@supports (anchor-name: --a) {
-			& .mainDrawer:not(.drawer-open) .libraryMenuOptions > .navMenuOption-selected,
-			&:has(#indexPage:not(.hide)) .skinHeader .headerTabs .emby-tab-button-active {
-				anchor-name: --cx-nav-current;
-				background-color: transparent !important;
-				box-shadow: none !important;
-			}
-
-			&:has(#indexPage:not(.hide), .mainDrawer:not(.drawer-open) .libraryMenuOptions > .navMenuOption-selected)::after {
-				content: "";
-				z-index: 1000;
-			}
-
-			/* the item's place in the bar: Home and Favourites, then the libraries */
-			&:has(#indexPage:not(.hide)):has(.headerTabs .emby-tab-button-active:nth-child(1))::after { --cx-pill-lead: 1; --cx-pill-trail: 1; }
-			&:has(#indexPage:not(.hide)):has(.headerTabs .emby-tab-button-active:nth-child(2))::after { --cx-pill-lead: 2; --cx-pill-trail: 2; }
-			&:has(.mainDrawer:not(.drawer-open) .libraryMenuOptions > a:nth-of-type(1).navMenuOption-selected)::after { --cx-pill-lead: 3; --cx-pill-trail: 3; }
-			&:has(.mainDrawer:not(.drawer-open) .libraryMenuOptions > a:nth-of-type(2).navMenuOption-selected)::after { --cx-pill-lead: 4; --cx-pill-trail: 4; }
-			&:has(.mainDrawer:not(.drawer-open) .libraryMenuOptions > a:nth-of-type(3).navMenuOption-selected)::after { --cx-pill-lead: 5; --cx-pill-trail: 5; }
-			&:has(.mainDrawer:not(.drawer-open) .libraryMenuOptions > a:nth-of-type(4).navMenuOption-selected)::after { --cx-pill-lead: 6; --cx-pill-trail: 6; }
-			&:has(.mainDrawer:not(.drawer-open) .libraryMenuOptions > a:nth-of-type(5).navMenuOption-selected)::after { --cx-pill-lead: 7; --cx-pill-trail: 7; }
-			&:has(.mainDrawer:not(.drawer-open) .libraryMenuOptions > a:nth-of-type(6).navMenuOption-selected)::after { --cx-pill-lead: 8; --cx-pill-trail: 8; }
-			&:has(.mainDrawer:not(.drawer-open) .libraryMenuOptions > a:nth-of-type(7).navMenuOption-selected)::after { --cx-pill-lead: 9; --cx-pill-trail: 9; }
-			&:has(.mainDrawer:not(.drawer-open) .libraryMenuOptions > a:nth-of-type(8).navMenuOption-selected)::after { --cx-pill-lead: 10; --cx-pill-trail: 10; }
+		&:has(#indexPage:not(.hide)) .skinHeader .headerTabs .emby-tab-button {
+			flex: none;
+			width: var(--cx-nav-w);
 		}
 
-		/* --- pages start under the one row ---------------------------------- */
+		&:has(#indexPage:not(.hide)) .skinHeader .headerTabs .emby-tab-button + .emby-tab-button {
+			animation: cx-nav-grow var(--cx-nav-move) var(--cx-spring) both;
+		}
+
+		/* while the drawer is open its list has the links: the bar steps aside */
+		&:has(#indexPage:not(.hide)):has(.mainDrawer.drawer-open) .skinHeader .headerTabs {
+			visibility: hidden;
+		}
+
+		/* --- the pill ----------------------------------------------------------
+		   One rounded box behind the current item, drawn by the header (above
+		   its glass, under the text).  Its place comes from two numbers that
+		   both move to the current item's number (Home -2, Favourites -1,
+		   the libraries 0, 1, 2, ...): --cx-pill-lead on a quick spring and
+		   --cx-pill-trail on a slower ease.  The pill spans both, so on a
+		   move the edge heading for the new item leads, the pill stretches
+		   toward it, and the other edge catches up as it lands, the way the
+		   Material tab indicator does.  The numbers are turned into
+		   positions with the items' fixed width, so it works the same in
+		   every browser, and nothing it is tied to moves with the drawer. */
+		& .skinHeader .headerLeft::before {
+			--lo: min(var(--cx-pill-lead), var(--cx-pill-trail));
+			--hi: calc(max(var(--cx-pill-lead), var(--cx-pill-trail)) + 1);
+			--wr: calc((var(--cx-libs-w) - 2px) / var(--cx-libs) - 2px);   /* a library's width */
+			position: fixed;
+			z-index: -1;
+			top: calc(var(--cx-seg-top) + 3px);
+			left: calc(50% + 1px + min(var(--lo), 0) * (var(--cx-nav-w) + 2px) + max(var(--lo), 0) * (var(--wr) + 2px));
+			right: calc(50% + 1px - min(var(--hi), 0) * (var(--cx-nav-w) + 2px) - max(var(--hi), 0) * (var(--wr) + 2px));
+			height: var(--cx-seg-item-h);
+			border-radius: var(--cx-r-md);
+			background-color: rgba(255, 255, 255, 0.14);
+			box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+			pointer-events: none;
+			content: "";
+			opacity: 0;
+			/* no current item (another page, the drawer open, or the moment
+			   between two pages): it stays where it is and fades out after
+			   a beat, so a page change slides it rather than redrawing it */
+			transition: --cx-pill-lead 0s 60s, --cx-pill-trail 0s 60s, opacity var(--cx-med) ease 120ms;
+		}
+
+		&:is(:has(#indexPage:not(.hide)), :has(.mainDrawer:not(.drawer-open) .libraryMenuOptions > .navMenuOption-selected)):not(:has(.mainDrawer.drawer-open)) .skinHeader .headerLeft::before {
+			opacity: 1;
+			transition:
+				--cx-pill-lead var(--cx-nav-move) var(--cx-spring),
+				--cx-pill-trail var(--cx-nav-move) cubic-bezier(0.55, 0, 0.25, 1),
+				opacity var(--cx-fast) ease;
+		}
+
+		&:has(#indexPage:not(.hide)):has(.headerTabs .emby-tab-button-active:nth-child(1)) .skinHeader .headerLeft::before { --cx-pill-lead: -2; --cx-pill-trail: -2; }
+		&:has(#indexPage:not(.hide)):has(.headerTabs .emby-tab-button-active:nth-child(2)) .skinHeader .headerLeft::before { --cx-pill-lead: -1; --cx-pill-trail: -1; }
+		&:has(.libraryMenuOptions > a:nth-of-type(1).navMenuOption-selected) .skinHeader .headerLeft::before { --cx-pill-lead: 0; --cx-pill-trail: 0; }
+		&:has(.libraryMenuOptions > a:nth-of-type(2).navMenuOption-selected) .skinHeader .headerLeft::before { --cx-pill-lead: 1; --cx-pill-trail: 1; }
+		&:has(.libraryMenuOptions > a:nth-of-type(3).navMenuOption-selected) .skinHeader .headerLeft::before { --cx-pill-lead: 2; --cx-pill-trail: 2; }
+		&:has(.libraryMenuOptions > a:nth-of-type(4).navMenuOption-selected) .skinHeader .headerLeft::before { --cx-pill-lead: 3; --cx-pill-trail: 3; }
+		&:has(.libraryMenuOptions > a:nth-of-type(5).navMenuOption-selected) .skinHeader .headerLeft::before { --cx-pill-lead: 4; --cx-pill-trail: 4; }
+		&:has(.libraryMenuOptions > a:nth-of-type(6).navMenuOption-selected) .skinHeader .headerLeft::before { --cx-pill-lead: 5; --cx-pill-trail: 5; }
+		&:has(.libraryMenuOptions > a:nth-of-type(7).navMenuOption-selected) .skinHeader .headerLeft::before { --cx-pill-lead: 6; --cx-pill-trail: 6; }
+		&:has(.libraryMenuOptions > a:nth-of-type(8).navMenuOption-selected) .skinHeader .headerLeft::before { --cx-pill-lead: 7; --cx-pill-trail: 7; }
+		&:has(.libraryMenuOptions > a:nth-of-type(9).navMenuOption-selected) .skinHeader .headerLeft::before { --cx-pill-lead: 8; --cx-pill-trail: 8; }
+		&:has(.libraryMenuOptions > a:nth-of-type(10).navMenuOption-selected) .skinHeader .headerLeft::before { --cx-pill-lead: 9; --cx-pill-trail: 9; }
+
+		/* --- pages start under the one row ------------------------------------ */
 
 		& .libraryPage:not(.itemDetailPage) {
 			padding-top: calc(var(--cx-bar-h) + 0.25rem) !important;
@@ -1021,62 +1210,14 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	}
 }
 
-/* --- sliding pill -----------------------------------------------------------
-   The current item's highlight in the navigation bar (both layouts) is one
-   pill, body::after, anchored to whichever item is current, so it slides
-   from one to the next.  It moves like Cinema-Info's tab bar: the edge
-   heading for the new item leads on a quick ease, the other waits a moment
-   on the old one and follows on a slower ease, so the pill stretches a
-   little as it sets off, flattens a touch while it is long, and gathers up
-   where it lands, without overshooting.
-
-   The pill's box follows on the slow ease (the trailing edge).  The leading
-   edge is that box pushed out by a margin on the side it is heading for,
-   as wide as the gap between two numbers that both go to the item's place
-   in the bar: --cx-pill-lead on the quick ease, --cx-pill-trail on the
-   slow one.  The gap is positive heading right and negative heading left,
-   and it is zero at rest.  One item is taken as about 6.5rem wide.
-
-   The rules that show it and set the item's place are with each layout's
-   bar.  Browsers without anchor positioning keep the per-item highlight. */
-
-@property --cx-pill-lead {
-	syntax: "<number>";
-	inherits: false;
-	initial-value: 0;
-}
-
-@property --cx-pill-trail {
-	syntax: "<number>";
-	inherits: false;
-	initial-value: 0;
-}
-
-@supports (anchor-name: --a) {
-	body::after {
-		--d: calc(var(--cx-pill-lead) - var(--cx-pill-trail));
-		--stretch: max(var(--d), -1 * var(--d));
-		position: fixed;
-		position-anchor: --cx-nav-current;
-		position-visibility: anchors-visible;
-		top: anchor(top);
-		bottom: anchor(bottom);
-		left: anchor(left);
-		right: anchor(right);
-		margin: calc(min(1, var(--stretch)) * 1.9px) calc(min(0, -1 * var(--d)) * 6.5rem) calc(min(1, var(--stretch)) * 1.9px) calc(min(0, var(--d)) * 6.5rem);
-		border-radius: var(--cx-r-md);
-		background-color: rgba(255, 255, 255, 0.14);
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-		pointer-events: none;
-		--lead: 300ms cubic-bezier(0.32, 0.72, 0.24, 1);
-		--trail: 400ms cubic-bezier(0.32, 0.72, 0.24, 1) 60ms;
-		transition: --cx-pill-lead var(--lead), --cx-pill-trail var(--trail), left var(--trail), right var(--trail), top var(--trail), bottom var(--trail);
+@media (min-width: 64em) and (prefers-reduced-motion: reduce) {
+	body .skinHeader .headerLeft::before {
+		transition: none !important;
 	}
 
-	@media (prefers-reduced-motion: reduce) {
-		body::after {
-			transition: none;
-		}
+	body .mainDrawer-scrollContainer > a.navMenuOption[href="#/home"],
+	body .skinHeader .headerTabs .emby-tab-button {
+		animation: none !important;
 	}
 }
 
@@ -1100,9 +1241,13 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	font-weight: 600;
 }
 
-/* Home (the server's name), Favourites and the libraries: one segmented
-   control at the top middle, the same as the classic layout's bar.  Below
-   1200px the toolbar wraps onto two rows and keeps the stock layout. */
+/* Home (the server's logo), Favourites and the libraries: one segmented
+   control at the top middle, the same as the classic layout's bar, with
+   the same pill (see "the pill" there).  Here it lives inside the control,
+   whose first item is a square logo and the rest one width each, so an
+   item's place is 0 for Home, 1 for Favourites, 2, 3, ... for the
+   libraries.  Below 1200px the toolbar wraps onto two rows and keeps the
+   stock layout. */
 @media (min-width: 1200px) {
 	.MuiAppBar-root .MuiToolbar-root > .MuiStack-root:has(> a.MuiButton-root) {
 		position: absolute;
@@ -1118,10 +1263,18 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 	}
 
 	.MuiAppBar-root .MuiToolbar-root > .MuiStack-root:has(> a.MuiButton-root) > .MuiButton-root {
-		height: var(--cx-seg-item-h);
+		flex: none;
+		justify-content: center;
+		width: var(--cx-nav-w);
 		min-width: 0;
+		height: var(--cx-seg-item-h);
 		margin: 0 !important;
-		padding: 0 1rem;
+		padding: 0 0.6rem;
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+		background: none !important;
+		box-shadow: none !important;
 		color: rgba(230, 230, 230, 0.62) !important;
 		font-size: 0.875rem;
 		font-weight: 500;
@@ -1132,48 +1285,79 @@ body:has(#itemDetailPage:not(.hide)) .MuiAppBar-root::before {
 		color: #fff !important;
 	}
 
+	.MuiAppBar-root .MuiToolbar-root > .MuiStack-root:has(> a.MuiButton-root) > .MuiButton-colorPrimary,
+	body:has(#indexPage:not(.hide)) .MuiAppBar-root .MuiToolbar-root > .MuiStack-root:not(:has(> .MuiButton-colorPrimary)) > .MuiButton-root:first-child {
+		color: #fff !important;
+	}
+
 	.MuiAppBar-root .MuiToolbar-root > .MuiStack-root > .MuiButton-root .MuiButton-startIcon {
 		display: none;
 	}
 
-	/* the server's logo stays as Home's icon */
+	/* Home: the server's logo in a square; its name stays for screen readers */
+	.MuiAppBar-root .MuiToolbar-root > .MuiStack-root:has(> a.MuiButton-root) > .MuiButton-root:first-child {
+		width: var(--cx-seg-item-h);
+		padding: 0;
+		font-size: 0;
+	}
+
 	.MuiAppBar-root .MuiToolbar-root > .MuiStack-root > .MuiButton-root:first-child .MuiButton-startIcon {
 		display: inherit;
-		margin-right: 0.45rem;
+		margin: 0;
 	}
 
-	/* Home is current on the home screen, unless Favourites is */
-	body:has(#indexPage:not(.hide)) .MuiAppBar-root .MuiToolbar-root > .MuiStack-root:not(:has(> .MuiButton-colorPrimary)) > .MuiButton-root:first-child,
-	.MuiAppBar-root .MuiToolbar-root > .MuiStack-root:has(> a.MuiButton-root) > a.MuiButton-root:is([aria-current], .Mui-selected, .MuiButton-textPrimary) {
-		background-color: rgba(255, 255, 255, 0.14) !important;
-		color: #fff !important;
+	.MuiAppBar-root .MuiToolbar-root > .MuiStack-root > .MuiButton-root:first-child .MuiButton-startIcon img {
+		width: 1.25rem;
+		height: 1.25rem;
+		max-width: none !important;
+		max-height: none !important;
+	}
+
+	/* the pill */
+	.MuiAppBar-root .MuiToolbar-root > .MuiStack-root:has(> a.MuiButton-root)::before {
+		--s: calc(var(--cx-seg-item-h) + 2px);   /* Home, and the gap after it */
+		--w: calc(var(--cx-nav-w) + 2px);       /* any other item, and its gap */
+		--lo: min(var(--cx-pill-lead), var(--cx-pill-trail));
+		--hi: max(var(--cx-pill-lead), var(--cx-pill-trail));
+		position: absolute;
+		z-index: -1;
+		top: 3px;
+		left: calc(3px + min(var(--lo), 1) * var(--s) + max(var(--lo) - 1, 0) * var(--w));
+		width: calc((min(var(--hi) + 1, 1) - min(var(--lo), 1)) * var(--s) + (max(var(--hi), 0) - max(var(--lo) - 1, 0)) * var(--w) - 2px);
+		height: var(--cx-seg-item-h);
+		border-radius: var(--cx-r-md);
+		background-color: rgba(255, 255, 255, 0.14);
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+		pointer-events: none;
+		content: "";
+		opacity: 0;
+		transition: --cx-pill-lead 0s 60s, --cx-pill-trail 0s 60s, opacity var(--cx-med) ease 120ms;
 	}
 
-	/* the sliding pill (see "sliding pill" above), over the toolbar */
-	@supports (anchor-name: --a) {
-		body:has(#indexPage:not(.hide)) .MuiAppBar-root .MuiToolbar-root > .MuiStack-root:not(:has(> .MuiButton-colorPrimary)) > .MuiButton-root:first-child,
-		.MuiAppBar-root .MuiToolbar-root > .MuiStack-root:has(> a.MuiButton-root) > a.MuiButton-root:is([aria-current], .Mui-selected, .MuiButton-textPrimary) {
-			anchor-name: --cx-nav-current;
-			background-color: transparent !important;
-			box-shadow: none !important;
-		}
+	body:has(#indexPage:not(.hide)) .MuiAppBar-root .MuiToolbar-root > .MuiStack-root:has(> a.MuiButton-root)::before,
+	.MuiAppBar-root .MuiToolbar-root > .MuiStack-root:has(> a.MuiButton-root):has(> .MuiButton-colorPrimary)::before {
+		opacity: 1;
+		transition:
+			--cx-pill-lead var(--cx-nav-move) var(--cx-spring),
+			--cx-pill-trail var(--cx-nav-move) cubic-bezier(0.55, 0, 0.25, 1),
+			opacity var(--cx-fast) ease;
+	}
 
-		body:has(.MuiAppBar-root .MuiToolbar-root > .MuiStack-root > .MuiButton-colorPrimary, #indexPage:not(.hide)):has(.MuiAppBar-root .MuiToolbar-root > .MuiStack-root > a.MuiButton-root)::after {
-			content: "";
-			z-index: 1101;   /* the app bar is 1100 */
-		}
+	body:has(#indexPage:not(.hide)) .MuiToolbar-root > .MuiStack-root:not(:has(> .MuiButton-colorPrimary))::before { --cx-pill-lead: 0; --cx-pill-trail: 0; }
+	.MuiToolbar-root > .MuiStack-root:has(> .MuiButton-colorPrimary:nth-child(2))::before { --cx-pill-lead: 1; --cx-pill-trail: 1; }
+	.MuiToolbar-root > .MuiStack-root:has(> .MuiButton-colorPrimary:nth-child(3))::before { --cx-pill-lead: 2; --cx-pill-trail: 2; }
+	.MuiToolbar-root > .MuiStack-root:has(> .MuiButton-colorPrimary:nth-child(4))::before { --cx-pill-lead: 3; --cx-pill-trail: 3; }
+	.MuiToolbar-root > .MuiStack-root:has(> .MuiButton-colorPrimary:nth-child(5))::before { --cx-pill-lead: 4; --cx-pill-trail: 4; }
+	.MuiToolbar-root > .MuiStack-root:has(> .MuiButton-colorPrimary:nth-child(6))::before { --cx-pill-lead: 5; --cx-pill-trail: 5; }
+	.MuiToolbar-root > .MuiStack-root:has(> .MuiButton-colorPrimary:nth-child(7))::before { --cx-pill-lead: 6; --cx-pill-trail: 6; }
+	.MuiToolbar-root > .MuiStack-root:has(> .MuiButton-colorPrimary:nth-child(8))::before { --cx-pill-lead: 7; --cx-pill-trail: 7; }
+	.MuiToolbar-root > .MuiStack-root:has(> .MuiButton-colorPrimary:nth-child(9))::before { --cx-pill-lead: 8; --cx-pill-trail: 8; }
+	.MuiToolbar-root > .MuiStack-root:has(> .MuiButton-colorPrimary:nth-child(10))::before { --cx-pill-lead: 9; --cx-pill-trail: 9; }
+}
 
-		body:has(#indexPage:not(.hide)):not(:has(.MuiToolbar-root > .MuiStack-root > .MuiButton-colorPrimary))::after { --cx-pill-lead: 1; --cx-pill-trail: 1; }
-		body:has(.MuiToolbar-root > .MuiStack-root > .MuiButton-colorPrimary:nth-child(2))::after { --cx-pill-lead: 2; --cx-pill-trail: 2; }
-		body:has(.MuiToolbar-root > .MuiStack-root > .MuiButton-colorPrimary:nth-child(3))::after { --cx-pill-lead: 3; --cx-pill-trail: 3; }
-		body:has(.MuiToolbar-root > .MuiStack-root > .MuiButton-colorPrimary:nth-child(4))::after { --cx-pill-lead: 4; --cx-pill-trail: 4; }
-		body:has(.MuiToolbar-root > .MuiStack-root > .MuiButton-colorPrimary:nth-child(5))::after { --cx-pill-lead: 5; --cx-pill-trail: 5; }
-		body:has(.MuiToolbar-root > .MuiStack-root > .MuiButton-colorPrimary:nth-child(6))::after { --cx-pill-lead: 6; --cx-pill-trail: 6; }
-		body:has(.MuiToolbar-root > .MuiStack-root > .MuiButton-colorPrimary:nth-child(7))::after { --cx-pill-lead: 7; --cx-pill-trail: 7; }
-		body:has(.MuiToolbar-root > .MuiStack-root > .MuiButton-colorPrimary:nth-child(8))::after { --cx-pill-lead: 8; --cx-pill-trail: 8; }
-		body:has(.MuiToolbar-root > .MuiStack-root > .MuiButton-colorPrimary:nth-child(9))::after { --cx-pill-lead: 9; --cx-pill-trail: 9; }
-		body:has(.MuiToolbar-root > .MuiStack-root > .MuiButton-colorPrimary:nth-child(10))::after { --cx-pill-lead: 10; --cx-pill-trail: 10; }
+@media (min-width: 1200px) and (prefers-reduced-motion: reduce) {
+	.MuiAppBar-root .MuiToolbar-root > .MuiStack-root::before {
+		transition: none !important;
 	}
 }
 
